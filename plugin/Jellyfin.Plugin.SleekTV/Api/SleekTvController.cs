@@ -24,6 +24,13 @@ public class SleekTvController : ControllerBase
     public ActionResult GetLayout()
     {
         var config = Plugin.Instance?.Configuration ?? new PluginConfiguration();
-        return Content(JsonSerializer.Serialize(config, JsonOptions), "application/json");
+        var node = JsonSerializer.SerializeToNode(config, JsonOptions)!.AsObject();
+
+        // Never send Seerr credentials to clients; just say whether Seerr is set up.
+        node.Remove("seerrUrl");
+        node.Remove("seerrApiKey");
+        node["seerrEnabled"] = SeerrController.IsConfigured(config);
+
+        return Content(node.ToJsonString(), "application/json");
     }
 }

@@ -37,8 +37,11 @@ import com.sleektv.data.JellyfinApi
 import com.sleektv.data.LayoutConfig
 import com.sleektv.data.episodeCode
 import com.sleektv.data.metaLine
+import com.sleektv.data.SeerrItem
+import com.sleektv.ui.DiscoverData
 import com.sleektv.ui.Nav
 import com.sleektv.ui.Screen
+import com.sleektv.ui.components.SeerrRow
 import com.sleektv.ui.components.BackdropScrim
 import com.sleektv.ui.components.CenterMessage
 import com.sleektv.ui.components.EDGE
@@ -116,18 +119,31 @@ fun HomeScreen(nav: Nav) {
         }
     }
 
+    // Seerr recommendations load separately so a slow or offline Seerr never holds up the home screen.
+    LaunchedEffect(layout.seerrEnabled, layout.showSeerrOnHome) {
+        if (!layout.seerrEnabled || !layout.showSeerrOnHome) return@LaunchedEffect
+        coroutineScope {
+            // Only suggest things that aren't already in the library.
+            fun List<SeerrItem>.toAdd() = filterNot { it.isAvailable }
+            val trending = async { runCatching { api.seerrDiscover("trending").toAdd() }.getOrDefault(emptyList()) }
+            val movies = async { runCatching { api.seerrDiscover("movies").toAdd() }.getOrDefault(emptyList()) }
+            val shows = async { runCatching { api.seerrDiscover("tv").toAdd() }.getOrDefault(emptyList()) }
+            nav.discoverCache = DiscoverData(trending.await(), movies.await(), shows.await())
+        }
+    }
+
     val home = data
     when {
         home == null && error != null -> CenterMessage("Couldn't load your library.\n$error") {
             SleekButton("Sign in again", onClick = { nav.logout() }, primary = true)
         }
         home == null -> CenterMessage("Loading…")
-        else -> HomeContent(nav, home, firstFocus)
+        else -> HomeContent(nav, home, nav.discoverCache, firstFocus)
     }
 }
 
 @Composable
-private fun HomeContent(nav: Nav, home: HomeData, firstFocus: FocusRequester) {
+private fun HomeContent(nav: Nav, home: HomeData, discover: DiscoverData?, firstFocus: FocusRequester) {
     val api = nav.app.api
     val layout = LocalLayout.current
     val heroItems = remember(home) { home.heroItems }
@@ -202,6 +218,26 @@ private fun HomeContent(nav: Nav, home: HomeData, firstFocus: FocusRequester) {
                                     firstItemFocus = f,
                                     modifier = Modifier.padding(top = layout.rowSpacing.dp),
                                 )
+                            }
+                        }
+                    }
+
+                    "discover" -> if (discover != null) {
+                        listOf(
+                            "trending" to ("Trending — add to your library" to discover.trending),
+                            "movies" to ("Popular movies to add" to discover.movies),
+                            "shows" to ("Popular shows to add" to discover.shows),
+                        ).forEach { (key, row) ->
+                            val (title, items) = row
+                            if (items.isNotEmpty()) {
+                                item(key = "discover-$key") {
+                                    SeerrRow(
+                                        title = title,
+                                        items = items,
+                                        onClick = { nav.openSeerr(it) },
+                                        modifier = Modifier.padding(top = layout.rowSpacing.dp),
+                                    )
+                                }
                             }
                         }
                     }

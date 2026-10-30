@@ -27,7 +27,7 @@ public class PluginConfiguration : BasePluginConfiguration
     public bool ShowHero { get; set; } = true;
     public int HeroHeight { get; set; } = 380;
     public int HeroAutoRotateSeconds { get; set; } = 8;
-    public string HomeRows { get; set; } = "ContinueWatching,NextUp,Latest,Libraries";
+    public string HomeRows { get; set; } = "ContinueWatching,NextUp,Latest,Discover,Libraries";
     public int LatestItemsPerLibrary { get; set; } = 20;
 
     // Cards
@@ -57,6 +57,11 @@ public class PluginConfiguration : BasePluginConfiguration
     public string SkipIntroMode { get; set; } = "Button";
     public string SkipCreditsMode { get; set; } = "Button";
     public int SkipButtonSeconds { get; set; } = 10;
+
+    // Seerr. The URL and key never leave the server; the app talks to Seerr through this plugin.
+    public string SeerrUrl { get; set; } = string.Empty;
+    public string SeerrApiKey { get; set; } = string.Empty;
+    public bool ShowSeerrOnHome { get; set; } = true;
 
     // CSS-style overrides applied by the app on top of everything above.
     public string CustomStyles { get; set; } = string.Empty;

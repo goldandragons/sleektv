@@ -73,6 +73,18 @@ episodes { layout: grid; columns: 5; seasons: stacked; order: desc; overview: hi
 player   { skip-intro: auto; skip-credits: button; button-seconds: 15; }
 ```
 
+## Seerr (Jellyseerr / Overseerr)
+
+In the SleekTV plugin settings, fill in the **Seerr** section: the Seerr address as your Jellyfin server reaches it (e.g. `http://192.168.1.50:5055`) and the API key from *Seerr → Settings → General*. Save, then press **Test connection**.
+
+Once that's set:
+
+- **Search** gets a second tab, **Request (Seerr)**, that searches everything on TMDB.
+- **Home** gets *Trending*, *Popular movies* and *Popular shows* rows with only titles you don't have yet. Move them with `Discover` in the home row list, or turn them off with the checkbox.
+- Each title opens a page with **Request** (or **Request all seasons** for shows). Titles you already have show **Watch in Jellyfin**.
+
+The API key never leaves your Jellyfin server; the plugin forwards requests to Seerr as the Jellyfin user who made them, so Seerr's permissions, quotas and auto-approve rules still apply. Each Jellyfin user needs a Seerr account (*Seerr → Users → Import Jellyfin Users*).
+
 ## Playback
 
 The app direct-plays the original file when the box can decode it. If playback fails, it switches to a server transcode (H.264/AAC over HLS) at the same position. Progress is reported to Jellyfin, so Continue Watching and watched status stay in sync with your other clients.

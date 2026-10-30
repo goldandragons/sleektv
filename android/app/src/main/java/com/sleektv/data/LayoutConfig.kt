@@ -27,7 +27,7 @@ data class LayoutConfig(
     val showHero: Boolean = true,
     val heroHeight: Int = 380,
     val heroAutoRotateSeconds: Int = 8,
-    val homeRows: String = "ContinueWatching,NextUp,Latest,Libraries",
+    val homeRows: String = "ContinueWatching,NextUp,Latest,Discover,Libraries",
     val latestItemsPerLibrary: Int = 20,
 
     // Cards
@@ -58,11 +58,29 @@ data class LayoutConfig(
     val skipCreditsMode: String = "Button", // Button | Auto | Off
     val skipButtonSeconds: Int = 10, // how long the button stays up; 0 = whole segment
 
+    // Seerr (the server only says whether it's set up; credentials stay on the server)
+    val seerrEnabled: Boolean = false,
+    val showSeerrOnHome: Boolean = true,
+
     // CSS-style overrides, applied last
     val customStyles: String = "",
 ) {
+    /**
+     * Home rows in order. Discover (Seerr) only shows when Seerr is set up and turned on;
+     * if it's on but missing from an older saved row list, it goes just before Libraries.
+     */
     val homeRowList: List<String>
-        get() = homeRows.split(',').map { it.trim() }.filter { it.isNotEmpty() }
+        get() {
+            val rows = homeRows.split(',').map { it.trim() }.filter { it.isNotEmpty() }.toMutableList()
+            val hasDiscover = rows.any { it.equals("Discover", true) }
+            if (!seerrEnabled || !showSeerrOnHome) {
+                rows.removeAll { it.equals("Discover", true) }
+            } else if (!hasDiscover) {
+                val at = rows.indexOfFirst { it.equals("Libraries", true) }
+                if (at >= 0) rows.add(at, "Discover") else rows.add("Discover")
+            }
+            return rows
+        }
 
     val postersLandscape: Boolean get() = posterStyle.equals("Landscape", true)
     val continueLandscape: Boolean get() = !continueWatchingStyle.equals("Portrait", true)

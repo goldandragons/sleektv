@@ -23,7 +23,7 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.util.concurrent.TimeUnit
 
-class ApiException(val code: Int, message: String) : Exception(message)
+class ApiException(val code: Int, message: String, val lastBody: String? = null) : Exception(message)
 
 /**
  * A small REST client for the Jellyfin endpoints the app needs.
@@ -97,6 +97,7 @@ class JellyfinApi(private val session: Session) {
                 throw ApiException(
                     response.code,
                     if (response.code == 401) "Wrong username or password" else "Server returned ${response.code}",
+                    text,
                 )
             }
             text
@@ -211,6 +212,44 @@ class JellyfinApi(private val session: Session) {
         ItemsResult.serializer(), "Items/$id/Similar",
         mapOf("userId" to userId, "limit" to 16, "fields" to fields),
     ).items
+
+    // ---------- Seerr (through the SleekTV plugin) ----------
+
+    suspend fun seerrSearch(query: String): List<SeerrItem> =
+        get(SeerrPage.serializer(), "SleekTV/Seerr/Search", mapOf("query" to query)).results
+            .filter { it.mediaType == "movie" || it.mediaType == "tv" }
+
+    /** kind: trending | movies | tv | upcoming */
+    suspend fun seerrDiscover(kind: String, page: Int = 1): List<SeerrItem> =
+        get(SeerrPage.serializer(), "SleekTV/Seerr/Discover/$kind", mapOf("page" to page)).results
+            .map {
+                // Discover/movies and discover/tv leave mediaType out.
+                if (it.mediaType != null) it else it.copy(mediaType = if (kind == "tv") "tv" else "movie")
+            }
+            .filter { it.mediaType == "movie" || it.mediaType == "tv" }
+
+    suspend fun seerrDetail(mediaType: String, tmdbId: Int): SeerrItem =
+        get(SeerrItem.serializer(), if (mediaType == "tv") "SleekTV/Seerr/Tv/$tmdbId" else "SleekTV/Seerr/Movie/$tmdbId")
+            .copy(mediaType = mediaType)
+
+    /** Requests a movie, or all seasons of a show. Throws with Seerr's message if it refuses. */
+    suspend fun seerrRequest(mediaType: String, tmdbId: Int) {
+        try {
+            post("SleekTV/Seerr/Request", buildJsonObject {
+                put("MediaType", mediaType)
+                put("MediaId", tmdbId)
+            })
+        } catch (e: ApiException) {
+            throw ApiException(e.code, e.lastBody?.let { readMessage(it) } ?: when (e.code) {
+                403 -> "You don't have permission to request this."
+                409 -> "This has already been requested."
+                else -> "Request failed (${e.code})"
+            })
+        }
+    }
+
+    private fun readMessage(body: String): String? =
+        runCatching { json.decodeFromString(ServerMessage.serializer(), body).message }.getOrNull()?.takeIf { it.isNotBlank() }
 
     // ---------- Skip intro / credits ----------
 

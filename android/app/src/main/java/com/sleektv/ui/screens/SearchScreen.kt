@@ -34,8 +34,17 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import com.sleektv.data.BaseItem
+import com.sleektv.data.SeerrItem
 import com.sleektv.data.episodeCode
+import com.sleektv.ui.components.SeerrRow
+import com.sleektv.ui.components.SleekClickable
+import com.sleektv.ui.theme.scaledSp
 import com.sleektv.ui.Nav
 import com.sleektv.ui.Screen
 import com.sleektv.ui.components.EDGE
@@ -53,8 +62,11 @@ private data class SearchResults(
     val movies: List<BaseItem> = emptyList(),
     val shows: List<BaseItem> = emptyList(),
     val episodes: List<BaseItem> = emptyList(),
+    val seerrMovies: List<SeerrItem> = emptyList(),
+    val seerrShows: List<SeerrItem> = emptyList(),
 ) {
-    val isEmpty: Boolean get() = movies.isEmpty() && shows.isEmpty() && episodes.isEmpty()
+    val isEmpty: Boolean
+        get() = movies.isEmpty() && shows.isEmpty() && episodes.isEmpty() && seerrMovies.isEmpty() && seerrShows.isEmpty()
 }
 
 /** Last search, so pressing Back from a result returns to the same results. */
@@ -77,8 +89,11 @@ fun SearchScreen(nav: Nav) {
 
     LaunchedEffect(Unit) { runCatching { fieldFocus.requestFocus() } }
 
+    // The Request tab only exists when Seerr is set up in the plugin.
+    val seerrTab = nav.searchSeerrTab && layout.seerrEnabled
+
     // Search as you type, after a short pause.
-    LaunchedEffect(query) {
+    LaunchedEffect(query, seerrTab) {
         lastQuery = query
         val term = query.trim()
         if (term.length < 2) {
@@ -89,11 +104,19 @@ fun SearchScreen(nav: Nav) {
         delay(400)
         searching = true
         try {
-            results = coroutineScope {
-                val movies = async { runCatching { api.search(term, "Movie") }.getOrDefault(emptyList()) }
-                val shows = async { runCatching { api.search(term, "Series") }.getOrDefault(emptyList()) }
-                val episodes = async { runCatching { api.search(term, "Episode", 24) }.getOrDefault(emptyList()) }
-                SearchResults(movies.await(), shows.await(), episodes.await())
+            results = if (seerrTab) {
+                val found = api.seerrSearch(term)
+                SearchResults(
+                    seerrMovies = found.filter { it.mediaType == "movie" },
+                    seerrShows = found.filter { it.mediaType == "tv" },
+                )
+            } else {
+                coroutineScope {
+                    val movies = async { runCatching { api.search(term, "Movie") }.getOrDefault(emptyList()) }
+                    val shows = async { runCatching { api.search(term, "Series") }.getOrDefault(emptyList()) }
+                    val episodes = async { runCatching { api.search(term, "Episode", 24) }.getOrDefault(emptyList()) }
+                    SearchResults(movies.await(), shows.await(), episodes.await())
+                }
             }
             error = null
         } catch (e: Exception) {
@@ -118,12 +141,29 @@ fun SearchScreen(nav: Nav) {
             contentPadding = PaddingValues(top = if (layout.headerHidden) 32.dp else 100.dp, bottom = 56.dp),
             modifier = Modifier.fillMaxSize(),
         ) {
+            if (layout.seerrEnabled) {
+                item(key = "tabs") {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        modifier = Modifier.padding(start = EDGE.dp, bottom = 16.dp),
+                    ) {
+                        SearchTab("Your library", selected = !seerrTab) { nav.searchSeerrTab = false }
+                        SearchTab("Request (Seerr)", selected = seerrTab) { nav.searchSeerrTab = true }
+                    }
+                }
+            }
+
             item(key = "field") {
                 androidx.compose.material3.MaterialTheme(colorScheme = darkColorScheme(primary = c.accent)) {
                     OutlinedTextField(
                         value = query,
                         onValueChange = { query = it },
-                        label = { SText("Search movies, shows and episodes", size = 14.sp) },
+                        label = {
+                            SText(
+                                if (seerrTab) "Find movies and shows to request" else "Search movies, shows and episodes",
+                                size = 14.sp,
+                            )
+                        },
                         singleLine = true,
                         textStyle = TextStyle(fontFamily = Inter, fontSize = 22.sp),
                         colors = fieldColors,
@@ -138,11 +178,14 @@ fun SearchScreen(nav: Nav) {
                             .focusRequester(fieldFocus)
                             // Let the D-pad leave the text field to reach the results.
                             .onPreviewKeyEvent { e ->
-                                if (e.type == KeyEventType.KeyDown && e.key == Key.DirectionDown) {
-                                    keyboard?.hide()
-                                    focus.moveFocus(FocusDirection.Down)
-                                } else {
-                                    false
+                                when {
+                                    e.type != KeyEventType.KeyDown -> false
+                                    e.key == Key.DirectionDown -> {
+                                        keyboard?.hide()
+                                        focus.moveFocus(FocusDirection.Down)
+                                    }
+                                    e.key == Key.DirectionUp -> focus.moveFocus(FocusDirection.Up)
+                                    else -> false
                                 }
                             },
                     )
@@ -187,6 +230,26 @@ fun SearchScreen(nav: Nav) {
                     )
                 }
             }
+            if (results.seerrMovies.isNotEmpty()) {
+                item(key = "seerr-movies") {
+                    SeerrRow(
+                        title = "Movies",
+                        items = results.seerrMovies,
+                        onClick = { nav.openSeerr(it) },
+                        modifier = Modifier.padding(top = layout.rowSpacing.dp),
+                    )
+                }
+            }
+            if (results.seerrShows.isNotEmpty()) {
+                item(key = "seerr-shows") {
+                    SeerrRow(
+                        title = "Shows",
+                        items = results.seerrShows,
+                        onClick = { nav.openSeerr(it) },
+                        modifier = Modifier.padding(top = layout.rowSpacing.dp),
+                    )
+                }
+            }
             if (results.episodes.isNotEmpty()) {
                 item(key = "episodes") {
                     MediaRow(
@@ -210,6 +273,29 @@ fun SearchScreen(nav: Nav) {
             onSearch = { runCatching { fieldFocus.requestFocus() } },
             onAccount = { nav.push(Screen.Account) },
             modifier = Modifier.align(Alignment.TopCenter),
+        )
+    }
+}
+
+@Composable
+private fun SearchTab(label: String, selected: Boolean, onClick: () -> Unit) {
+    val c = LocalSleekColors.current
+    SleekClickable(
+        onClick = onClick,
+        shape = RoundedCornerShape(50),
+        focusScale = 1.05f,
+        containerColor = if (selected) c.accent else Color.White.copy(alpha = 0.12f),
+        focusedContainerColor = if (selected) c.accent else Color.White,
+        contentColor = Color.White,
+        focusedContentColor = if (selected) Color.White else Color.Black,
+    ) {
+        androidx.tv.material3.Text(
+            text = label,
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 9.dp),
+            fontFamily = Inter,
+            fontWeight = FontWeight.SemiBold,
+            fontSize = scaledSp(15),
+            maxLines = 1,
         )
     }
 }

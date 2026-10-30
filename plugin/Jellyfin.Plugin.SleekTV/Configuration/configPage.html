@@ -54,7 +54,7 @@
                 </div>
                 <div class="inputContainer">
                     <input is="emby-input" type="text" data-cfg="HomeRows" label="Home rows, in order" />
-                    <div class="fieldDescription">Comma separated. Options: ContinueWatching, NextUp, Latest, Libraries. Leave one out to hide it.</div>
+                    <div class="fieldDescription">Comma separated. Options: ContinueWatching, NextUp, Latest, Discover (Seerr), Libraries. Leave one out to hide it.</div>
                 </div>
 
                 <h2>Cards</h2>
@@ -130,6 +130,24 @@
                     <div class="inputContainer"><input is="emby-input" type="number" min="0" max="600" data-cfg="SkipButtonSeconds" label="Button shows for (seconds, 0 = whole intro)" /></div>
                 </div>
 
+                <h2>Seerr</h2>
+                <p class="sleek-help">Connect Jellyseerr / Overseerr so the app can show a Request tab in Search and recommend titles to add on the home screen. The API key stays on this server; requests are made as each Jellyfin user, so their Seerr permissions apply.</p>
+                <div class="sleek-grid">
+                    <div class="inputContainer">
+                        <input is="emby-input" type="text" data-cfg="SeerrUrl" label="Seerr address" placeholder="http://192.168.1.50:5055" />
+                        <div class="fieldDescription">As this Jellyfin server reaches it.</div>
+                    </div>
+                    <div class="inputContainer">
+                        <input is="emby-input" type="password" data-cfg="SeerrApiKey" label="Seerr API key" autocomplete="off" />
+                        <div class="fieldDescription">Seerr → Settings → General → API Key.</div>
+                    </div>
+                </div>
+                <div class="checkboxContainer"><label><input is="emby-checkbox" type="checkbox" data-cfg="ShowSeerrOnHome" /><span>Show "Discover" recommendations on the home screen</span></label></div>
+                <div style="display:flex; gap:1em; align-items:center;">
+                    <button is="emby-button" type="button" id="SleekSeerrTest" class="raised emby-button"><span>Test connection</span></button>
+                    <span id="SleekSeerrStatus" class="sleek-help">Save first, then test.</span>
+                </div>
+
                 <h2>Custom styles</h2>
                 <p class="sleek-help">CSS-style overrides. Anything here is applied after the settings above, so it wins. Unknown properties are ignored.</p>
                 <div class="inputContainer">
@@ -189,6 +207,16 @@ episodes { layout: grid; columns: 5; overview: hide; }</pre>
                         }
                     });
                     Dashboard.hideLoadingMsg();
+                });
+            });
+
+            document.querySelector('#SleekSeerrTest').addEventListener('click', function () {
+                var status = document.querySelector('#SleekSeerrStatus');
+                status.textContent = 'Testing…';
+                ApiClient.getJSON(ApiClient.getUrl('SleekTV/Seerr/Status')).then(function (r) {
+                    status.textContent = r.reachable ? '✓ ' + r.message : '✗ ' + r.message;
+                }, function () {
+                    status.textContent = '✗ Test failed. Is the plugin up to date?';
                 });
             });
 

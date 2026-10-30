@@ -29,6 +29,8 @@ import com.sleektv.ui.screens.LibraryScreen
 import com.sleektv.ui.screens.LoginScreen
 import com.sleektv.ui.screens.PlayerScreen
 import com.sleektv.ui.screens.SearchScreen
+import com.sleektv.ui.screens.SeerrDetailScreen
+import com.sleektv.data.SeerrItem
 import com.sleektv.ui.theme.LocalSleekColors
 import com.sleektv.ui.theme.SleekTheme
 
@@ -40,7 +42,15 @@ sealed interface Screen {
     data class Library(val view: BaseItem) : Screen
     data class Detail(val itemId: String) : Screen
     data class Player(val itemId: String) : Screen
+    data class SeerrDetail(val mediaType: String, val tmdbId: Int) : Screen
 }
+
+/** Seerr rows for the home screen. */
+data class DiscoverData(
+    val trending: List<SeerrItem> = emptyList(),
+    val movies: List<SeerrItem> = emptyList(),
+    val shows: List<SeerrItem> = emptyList(),
+)
 
 /** Back stack, shared state and the remote layout. */
 class Nav(
@@ -56,6 +66,10 @@ class Nav(
 
     /** Home content + scroll position survive trips into detail pages and the player. */
     var homeCache by mutableStateOf<HomeData?>(null)
+    var discoverCache by mutableStateOf<DiscoverData?>(null)
+
+    /** Which Search tab was last open: library or Seerr. */
+    var searchSeerrTab by mutableStateOf(false)
     val homeListState = LazyListState()
 
     fun push(screen: Screen) {
@@ -82,9 +96,17 @@ class Nav(
 
     fun play(item: BaseItem) = push(Screen.Player(item.id))
 
+    /** Opens a Seerr title; if it's already in Jellyfin, goes straight to the library page. */
+    fun openSeerr(item: SeerrItem) {
+        val jellyfinId = item.mediaInfo?.jellyfinMediaId
+        if (item.isAvailable && jellyfinId != null) push(Screen.Detail(jellyfinId))
+        else push(Screen.SeerrDetail(item.mediaType ?: "movie", item.id))
+    }
+
     fun logout() {
         app.session.logout()
         homeCache = null
+        discoverCache = null
         views = emptyList()
         resetTo(Screen.Login)
     }
@@ -130,6 +152,7 @@ fun SleekTvApp(app: SleekApp) {
                     is Screen.Library -> LibraryScreen(nav, screen.view)
                     is Screen.Detail -> DetailScreen(nav, screen.itemId)
                     is Screen.Player -> PlayerScreen(nav, screen.itemId)
+                    is Screen.SeerrDetail -> SeerrDetailScreen(nav, screen.mediaType, screen.tmdbId)
                 }
             }
         }
