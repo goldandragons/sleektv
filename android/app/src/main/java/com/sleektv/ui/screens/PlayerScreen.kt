@@ -1,6 +1,6 @@
 package com.sleektv.ui.screens
 
-import android.view.View
+import android.view.ViewGroup
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -240,7 +240,7 @@ private fun VideoPlayer(nav: Nav, item: BaseItem) {
                     keepScreenOn = true
                     isFocusable = true
                     isFocusableInTouchMode = true
-                    descendantFocusability = View.FOCUS_AFTER_DESCENDANTS
+                    descendantFocusability = ViewGroup.FOCUS_AFTER_DESCENDANTS
                     post { requestFocus() }
                     playerView = this
                 }
