@@ -5,6 +5,9 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: write # needed to publish the release
+
 jobs:
   android:
     name: Android TV app (APK)
@@ -23,7 +26,18 @@ jobs:
         working-directory: android
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          set -o pipefail
+          if ! ./gradlew assembleDebug --no-daemon 2>&1 | tee build.log; then
+            # Surface compile errors as annotations (readable from the Actions UI and API).
+            grep -E "^e: |What went wrong|> .*(error|Could not|failed)" build.log | head -60 > errors.txt || true
+            if [ ! -s errors.txt ]; then tail -60 build.log > errors.txt; fi
+            split -l 6 errors.txt chunk_
+            for f in chunk_*; do
+              msg=$(sed 's/%/%25/g' "$f" | awk '{printf "%s%%0A", $0}')
+              echo "::error title=Gradle build::$msg"
+            done
+            exit 1
+          fi
 
       - name: Rename APK
         run: cp android/app/build/outputs/apk/debug/app-debug.apk SleekTV.apk
@@ -46,13 +60,73 @@ jobs:
       - name: Build plugin
         run: dotnet publish plugin/Jellyfin.Plugin.SleekTV/Jellyfin.Plugin.SleekTV.csproj -c Release -o out
 
-      - name: Package for the plugins folder
+      # Jellyfin installs from a zip with the dll and meta.json at the top level.
+      - name: Package plugin zip
         run: |
-          mkdir -p "pkg/SleekTV_0.1.0.0"
-          cp out/Jellyfin.Plugin.SleekTV.dll "pkg/SleekTV_0.1.0.0/"
-          cp plugin/meta.json "pkg/SleekTV_0.1.0.0/"
+          mkdir -p pkg
+          cp out/Jellyfin.Plugin.SleekTV.dll pkg/
+          cp plugin/meta.json pkg/
+          (cd pkg && zip -j ../SleekTV-plugin.zip Jellyfin.Plugin.SleekTV.dll meta.json)
 
       - uses: actions/upload-artifact@v4
         with:
           name: SleekTV-plugin
-          path: pkg/
+          path: SleekTV-plugin.zip
+
+  release:
+    name: Publish release + Jellyfin manifest
+    needs: [android, plugin]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Write manifest.json
+        run: |
+          VERSION=$(python3 -c "import json;print(json.load(open('plugin/meta.json'))['version'])")
+          ABI=$(python3 -c "import json;print(json.load(open('plugin/meta.json'))['targetAbi'])")
+          TAG="v$VERSION"
+          CHECKSUM=$(md5sum artifacts/SleekTV-plugin.zip | cut -d' ' -f1)
+          echo "TAG=$TAG" >> "$GITHUB_ENV"
+          python3 - "$VERSION" "$ABI" "$TAG" "$CHECKSUM" <<'EOF'
+          import json, sys, datetime, os
+          version, abi, tag, checksum = sys.argv[1:5]
+          repo = os.environ["GITHUB_REPOSITORY"]
+          meta = json.load(open("plugin/meta.json"))
+          manifest = [{
+              "guid": meta["guid"],
+              "name": meta["name"],
+              "description": meta["description"],
+              "overview": meta["overview"],
+              "owner": meta["owner"],
+              "category": meta["category"],
+              "versions": [{
+                  "version": version,
+                  "changelog": meta.get("changelog", ""),
+                  "targetAbi": abi,
+                  "sourceUrl": f"https://github.com/{repo}/releases/download/{tag}/SleekTV-plugin.zip",
+                  "checksum": checksum,
+                  "timestamp": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+              }],
+          }]
+          json.dump(manifest, open("artifacts/manifest.json", "w"), indent=2)
+          print(json.dumps(manifest, indent=2))
+          EOF
+
+      # One release per plugin version; re-running replaces its files.
+      - name: Publish release
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" artifacts/SleekTV-plugin.zip artifacts/SleekTV.apk artifacts/manifest.json --clobber
+          else
+            gh release create "$TAG" artifacts/SleekTV-plugin.zip artifacts/SleekTV.apk artifacts/manifest.json \
+              --title "SleekTV $TAG" --latest \
+              --notes "Add this URL to Jellyfin (Dashboard → Plugins → Repositories): https://github.com/${GITHUB_REPOSITORY}/releases/latest/download/manifest.json"
+          fi
