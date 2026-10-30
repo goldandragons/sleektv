@@ -42,6 +42,8 @@ import com.sleektv.ui.DiscoverData
 import com.sleektv.ui.Nav
 import com.sleektv.ui.Screen
 import com.sleektv.ui.components.SeerrRow
+import com.sleektv.ui.components.rememberHeaderVisible
+import androidx.compose.ui.ExperimentalComposeUiApi
 import com.sleektv.ui.components.BackdropScrim
 import com.sleektv.ui.components.CenterMessage
 import com.sleektv.ui.components.EDGE
@@ -142,6 +144,7 @@ fun HomeScreen(nav: Nav) {
     }
 }
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 private fun HomeContent(nav: Nav, home: HomeData, discover: DiscoverData?, firstFocus: FocusRequester) {
     val api = nav.app.api
@@ -149,12 +152,20 @@ private fun HomeContent(nav: Nav, home: HomeData, discover: DiscoverData?, first
     val heroItems = remember(home) { home.heroItems }
     val showHero = layout.showHero && heroItems.isNotEmpty()
     val topPad = if (showHero || layout.headerHidden) 0.dp else 96.dp
+    val listState = nav.homeListState
+    val contentFocus = remember { FocusRequester() }
+    val headerVisible = rememberHeaderVisible(
+        atTop = { listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset < 40 },
+        position = { listState.firstVisibleItemIndex * 100_000L + listState.firstVisibleItemScrollOffset },
+    )
 
     Box(Modifier.fillMaxSize()) {
         LazyColumn(
-            state = nav.homeListState,
+            state = listState,
             contentPadding = PaddingValues(top = topPad, bottom = 56.dp),
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .focusRequester(contentFocus),
         ) {
             var focusUsed = false
             fun nextFocus(): FocusRequester? = if (!focusUsed) { focusUsed = true; firstFocus } else null
@@ -272,6 +283,8 @@ private fun HomeContent(nav: Nav, home: HomeData, discover: DiscoverData?, first
             onSearch = { nav.push(Screen.Search) },
             onAccount = { nav.push(Screen.Account) },
             modifier = Modifier.align(Alignment.TopCenter),
+            visible = headerVisible,
+            contentFocus = contentFocus,
         )
     }
 }

@@ -209,6 +209,20 @@ class JellyfinApi(private val session: Session) {
         ),
     )
 
+    /**
+     * Every title's sort name in the same order as [items], without images or user data,
+     * so the A–Z rail knows where each letter starts.
+     */
+    suspend fun sortNames(parentId: String, includeTypes: String?, recursive: Boolean): List<String> = get(
+        ItemsResult.serializer(), "Items",
+        mapOf(
+            "userId" to userId, "parentId" to parentId, "includeItemTypes" to includeTypes,
+            "recursive" to recursive, "sortBy" to "SortName", "sortOrder" to "Ascending",
+            "fields" to "SortName", "enableImages" to false, "enableUserData" to false,
+            "enableTotalRecordCount" to false,
+        ),
+    ).items.map { it.sortName ?: it.name.orEmpty() }
+
     /** Library-wide search; the server orders results by relevance. */
     suspend fun search(term: String, includeTypes: String, limit: Int = 30): List<BaseItem> = get(
         ItemsResult.serializer(), "Items",

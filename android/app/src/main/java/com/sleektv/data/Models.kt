@@ -56,6 +56,7 @@ data class Person(
 data class BaseItem(
     @SerialName("Id") val id: String,
     @SerialName("Name") val name: String? = null,
+    @SerialName("SortName") val sortName: String? = null,
     @SerialName("Type") val type: String? = null,
     @SerialName("IsFolder") val isFolder: Boolean? = null,
     @SerialName("CollectionType") val collectionType: String? = null,

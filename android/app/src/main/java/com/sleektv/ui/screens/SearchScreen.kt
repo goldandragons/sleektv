@@ -43,6 +43,8 @@ import com.sleektv.data.BaseItem
 import com.sleektv.data.SeerrItem
 import com.sleektv.data.episodeCode
 import com.sleektv.ui.components.SeerrRow
+import com.sleektv.ui.components.rememberHeaderVisible
+import androidx.compose.foundation.lazy.rememberLazyListState
 import com.sleektv.ui.components.SleekClickable
 import com.sleektv.ui.theme.scaledSp
 import com.sleektv.ui.Nav
@@ -136,10 +138,20 @@ fun SearchScreen(nav: Nav) {
         unfocusedLabelColor = c.muted,
     )
 
+    val listState = rememberLazyListState()
+    val contentFocus = remember { FocusRequester() }
+    val headerVisible = rememberHeaderVisible(
+        atTop = { listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset < 40 },
+        position = { listState.firstVisibleItemIndex * 100_000L + listState.firstVisibleItemScrollOffset },
+    )
+
     Box(Modifier.fillMaxSize()) {
         LazyColumn(
+            state = listState,
             contentPadding = PaddingValues(top = if (layout.headerHidden) 32.dp else 100.dp, bottom = 56.dp),
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .focusRequester(contentFocus),
         ) {
             if (layout.seerrEnabled) {
                 item(key = "tabs") {
@@ -273,6 +285,8 @@ fun SearchScreen(nav: Nav) {
             onSearch = { runCatching { fieldFocus.requestFocus() } },
             onAccount = { nav.push(Screen.Account) },
             modifier = Modifier.align(Alignment.TopCenter),
+            visible = headerVisible,
+            contentFocus = contentFocus,
         )
     }
 }
