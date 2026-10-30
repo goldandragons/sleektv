@@ -28,6 +28,15 @@ class Session(context: Context) {
         get() = prefs.getString("layout", null)
         set(value) = prefs.edit().putString("layout", value).apply()
 
+    /** Downloaded @import theme CSS, plus which URLs it came from, so themes work offline. */
+    var importsKey: String?
+        get() = prefs.getString("importsKey", null)
+        set(value) = prefs.edit().putString("importsKey", value).apply()
+
+    var importsCss: String
+        get() = prefs.getString("importsCss", null).orEmpty()
+        set(value) = prefs.edit().putString("importsCss", value).apply()
+
     val deviceId: String by lazy {
         prefs.getString("deviceId", null) ?: UUID.randomUUID().toString().also {
             prefs.edit().putString("deviceId", it).apply()

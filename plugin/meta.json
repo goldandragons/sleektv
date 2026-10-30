@@ -1,6 +1,6 @@
 {
   "category": "General",
-  "changelog": "Seerr integration: Request tab in search and Discover rows on the home screen.",
+  "changelog": "Custom styles accept Jellyfin web themes via @import (NetFin, ElegantFin, Ultrachromic...).",
   "description": "Remote layout settings for the SleekTV Android TV app, including CSS-style custom overrides.",
   "guid": "fec99f9b-3607-4532-8f5e-2acf55ce8388",
   "name": "SleekTV",
@@ -8,7 +8,7 @@
   "owner": "SleekTV",
   "targetAbi": "12.3.0.0",
   "timestamp": "2026-10-29T00:00:00.0000000Z",
-  "version": "0.2.0.0",
+  "version": "0.2.1.0",
   "status": "Active",
   "autoUpdate": false,
   "imagePath": "",

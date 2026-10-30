@@ -17,6 +17,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -43,9 +44,32 @@ class JellyfinApi(private val session: Session) {
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(60, TimeUnit.SECONDS)
         .addInterceptor { chain ->
-            chain.proceed(chain.request().newBuilder().header("Authorization", authHeader()).build())
+            // Only send the Jellyfin sign-in to the Jellyfin server, never to TMDB or other hosts.
+            val request = chain.request()
+            val server = session.serverUrl?.let { normalizeServer(it).toHttpUrlOrNull() }
+            if (server != null && request.url.host == server.host && request.url.port == server.port) {
+                chain.proceed(request.newBuilder().header("Authorization", authHeader()).build())
+            } else {
+                chain.proceed(request)
+            }
         }
         .build()
+
+    /** For outside files like @import themes: no Jellyfin credentials attached. */
+    private val plainHttp: OkHttpClient = OkHttpClient.Builder()
+        .connectTimeout(10, TimeUnit.SECONDS)
+        .readTimeout(15, TimeUnit.SECONDS)
+        .build()
+
+    /** Downloads a CSS file (max 2 MB) from anywhere on the web. */
+    suspend fun fetchText(url: String): String = withContext(Dispatchers.IO) {
+        plainHttp.newCall(Request.Builder().url(url).get().build()).execute().use { response ->
+            if (!response.isSuccessful) throw ApiException(response.code, "Couldn't download $url")
+            val source = response.body ?: throw ApiException(response.code, "Empty response from $url")
+            if (source.contentLength() > 2_000_000) throw ApiException(413, "$url is too large")
+            source.string().take(2_000_000)
+        }
+    }
 
     private val fields = "Overview,Genres,People,MediaSources,PrimaryImageAspectRatio,ChildCount"
     private val userId: String get() = session.userId.orEmpty()

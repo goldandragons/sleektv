@@ -120,11 +120,21 @@ data class LayoutConfig(
             isLenient = true
         }
 
-        /** Parse plugin JSON (or fall back to defaults), then apply the custom styles. */
-        fun parse(raw: String?): LayoutConfig {
-            val base = raw?.let { runCatching { json.decodeFromString(serializer(), it) }.getOrNull() }
-                ?: LayoutConfig()
-            return CustomStyles.apply(base, base.customStyles).sanitized()
+        /**
+         * Builds the final layout, each step overriding the one before:
+         * plugin settings → imported web theme (@import) → web CSS typed in the box → SleekTV rules in the box.
+         */
+        fun parse(raw: String?, importedCss: String = ""): LayoutConfig {
+            val base = decode(raw) ?: LayoutConfig()
+            val withTheme = WebCss.apply(base, importedCss)
+            val withWebRules = WebCss.apply(withTheme, base.customStyles)
+            return CustomStyles.apply(withWebRules, base.customStyles).sanitized()
         }
+
+        /** Just the Custom styles text from the plugin JSON (to find @import lines). */
+        fun customStylesOf(raw: String?): String = decode(raw)?.customStyles.orEmpty()
+
+        private fun decode(raw: String?): LayoutConfig? =
+            raw?.let { runCatching { json.decodeFromString(serializer(), it) }.getOrNull() }
     }
 }

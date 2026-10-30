@@ -31,6 +31,7 @@ import com.sleektv.ui.screens.PlayerScreen
 import com.sleektv.ui.screens.SearchScreen
 import com.sleektv.ui.screens.SeerrDetailScreen
 import com.sleektv.data.SeerrItem
+import com.sleektv.data.WebCss
 import com.sleektv.ui.theme.LocalSleekColors
 import com.sleektv.ui.theme.SleekTheme
 
@@ -111,12 +112,37 @@ class Nav(
         resetTo(Screen.Login)
     }
 
+    /**
+     * Downloads the themes named in `@import` lines. If a download fails, keeps the last
+     * copy for the same imports, so a theme doesn't flicker off when the internet blips.
+     */
+    private suspend fun importedCss(raw: String): String {
+        val session = app.session
+        val styles = LayoutConfig.customStylesOf(raw)
+        val key = WebCss.importUrls(styles).joinToString("\n")
+        if (key.isEmpty()) {
+            session.importsKey = ""
+            session.importsCss = ""
+            return ""
+        }
+        val fresh = WebCss.resolveImports(styles) { url -> app.api.fetchText(url) }
+        return when {
+            fresh.isNotBlank() -> {
+                session.importsKey = key
+                session.importsCss = fresh
+                fresh
+            }
+            session.importsKey == key -> session.importsCss
+            else -> ""
+        }
+    }
+
     /** Pull the latest layout from the plugin. Keeps the cached one if the server can't be reached. */
     suspend fun refreshLayout() {
         try {
             val raw = app.api.layoutJson()
             app.session.cachedLayoutJson = raw
-            layoutState.value = LayoutConfig.parse(raw)
+            layoutState.value = LayoutConfig.parse(raw, importedCss(raw))
         } catch (e: ApiException) {
             if (e.code == 401) logout()
             // 404 = plugin not installed: just keep defaults.
@@ -131,7 +157,7 @@ fun SleekTvApp(app: SleekApp) {
     val stack = remember {
         mutableStateListOf<Screen>(if (app.session.isLoggedIn) Screen.Home else Screen.Login)
     }
-    val layout = remember { mutableStateOf(LayoutConfig.parse(app.session.cachedLayoutJson)) }
+    val layout = remember { mutableStateOf(LayoutConfig.parse(app.session.cachedLayoutJson, app.session.importsCss)) }
     val nav = remember { Nav(app, stack, layout) }
 
     BackHandler(enabled = stack.size > 1) { nav.back() }

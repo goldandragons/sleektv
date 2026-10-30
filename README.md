@@ -73,6 +73,29 @@ episodes { layout: grid; columns: 5; seasons: stacked; order: desc; overview: hi
 player   { skip-intro: auto; skip-credits: button; button-seconds: 15; }
 ```
 
+### Jellyfin web themes (`@import`)
+
+The Custom styles box also accepts Jellyfin web themes such as NetFin, ElegantFin or Ultrachromic:
+
+```css
+@import url("https://cdn.jsdelivr.net/gh/ya0903/NetFin@main/netfin.css");
+card { focus-scale: 1.1; }   /* your own rules still win */
+```
+
+The TV downloads the theme (and any themes it imports), keeps a copy for offline use, and translates what a native app can use:
+
+| From the web theme | Becomes |
+|---|---|
+| `--activeColor`, `--uiAccentColor`, `--accentColor`… | Accent |
+| `body` background, `--backgroundColor`, `--darkerGradientPoint`… | Background |
+| `.cardBox` / `.cardContent` background, `--cardBackground`… | Card surface |
+| `--textColor`, `body` color | Text |
+| `.cardScalable` / `.cardContent` border-radius, `--largeRadius` | Card corner radius |
+| `.card:focus` / `:hover` `transform: scale()` | Focus zoom |
+| `.sectionTitle` font-size | Row title size |
+
+Fonts, blur, animations and page-layout rules have no native equivalent and are skipped; the app keeps Inter. Plain web CSS pasted into the box is translated the same way.
+
 ## Seerr (Jellyseerr / Overseerr)
 
 In the SleekTV plugin settings, fill in the **Seerr** section: the Seerr address as your Jellyfin server reaches it (e.g. `http://192.168.1.50:5055`) and the API key from *Seerr → Settings → General*. Save, then press **Test connection**.
