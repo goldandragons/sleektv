@@ -83,7 +83,7 @@ If the [Intro Skipper](https://github.com/intro-skipper/intro-skipper) plugin is
 
 ## Known limits of this first version
 
-- No search, Live TV, or music yet.
+- No Live TV or music yet.
 - Subtitles: embedded tracks work through the player's subtitle button; external subtitle files aren't loaded yet.
 - The APK is a debug build (installable and fine for personal use, slightly larger than a release build).
 

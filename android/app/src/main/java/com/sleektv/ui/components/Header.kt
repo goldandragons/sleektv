@@ -41,6 +41,7 @@ fun SleekHeader(
     selectedId: String?, // null = Home
     onHome: () -> Unit,
     onView: (BaseItem) -> Unit,
+    onSearch: () -> Unit,
     onAccount: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -83,6 +84,8 @@ fun SleekHeader(
                 NavPill(view.name.orEmpty(), selected = selectedId == view.id, onClick = { onView(view) })
             }
         }
+        NavPill("Search", selected = selectedId == com.sleektv.ui.screens.SEARCH_TAB, onClick = onSearch)
+        Spacer(Modifier.width(12.dp))
         SText(clock, size = scaledSp(14), color = c.muted, weight = FontWeight.Medium)
         Spacer(Modifier.width(12.dp))
         NavPill("Account", selected = false, onClick = onAccount)

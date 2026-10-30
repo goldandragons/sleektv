@@ -233,6 +233,7 @@ private fun HomeContent(nav: Nav, home: HomeData, firstFocus: FocusRequester) {
             selectedId = null,
             onHome = { },
             onView = { nav.push(Screen.Library(it)) },
+            onSearch = { nav.push(Screen.Search) },
             onAccount = { nav.push(Screen.Account) },
             modifier = Modifier.align(Alignment.TopCenter),
         )

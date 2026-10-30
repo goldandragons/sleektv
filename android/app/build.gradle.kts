@@ -13,8 +13,18 @@ android {
         applicationId = "com.sleektv"
         minSdk = 23
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.2.0"
+    }
+
+    // One fixed key, so each new APK installs over the previous one on the TV.
+    signingConfigs {
+        getByName("debug") {
+            storeFile = file("sleektv-debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
     }
 
     buildTypes {

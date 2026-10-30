@@ -184,6 +184,16 @@ class JellyfinApi(private val session: Session) {
         ),
     )
 
+    /** Library-wide search; the server orders results by relevance. */
+    suspend fun search(term: String, includeTypes: String, limit: Int = 30): List<BaseItem> = get(
+        ItemsResult.serializer(), "Items",
+        mapOf(
+            "userId" to userId, "searchTerm" to term, "includeItemTypes" to includeTypes,
+            "recursive" to true, "limit" to limit, "fields" to fields,
+            "imageTypeLimit" to 1, "enableTotalRecordCount" to false,
+        ),
+    ).items
+
     suspend fun item(id: String): BaseItem =
         get(BaseItem.serializer(), "Items/$id", mapOf("userId" to userId))
 

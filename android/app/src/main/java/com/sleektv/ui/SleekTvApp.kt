@@ -28,6 +28,7 @@ import com.sleektv.ui.screens.HomeScreen
 import com.sleektv.ui.screens.LibraryScreen
 import com.sleektv.ui.screens.LoginScreen
 import com.sleektv.ui.screens.PlayerScreen
+import com.sleektv.ui.screens.SearchScreen
 import com.sleektv.ui.theme.LocalSleekColors
 import com.sleektv.ui.theme.SleekTheme
 
@@ -35,6 +36,7 @@ sealed interface Screen {
     data object Login : Screen
     data object Home : Screen
     data object Account : Screen
+    data object Search : Screen
     data class Library(val view: BaseItem) : Screen
     data class Detail(val itemId: String) : Screen
     data class Player(val itemId: String) : Screen
@@ -124,6 +126,7 @@ fun SleekTvApp(app: SleekApp) {
                     Screen.Login -> LoginScreen(nav)
                     Screen.Home -> HomeScreen(nav)
                     Screen.Account -> AccountScreen(nav)
+                    Screen.Search -> SearchScreen(nav)
                     is Screen.Library -> LibraryScreen(nav, screen.view)
                     is Screen.Detail -> DetailScreen(nav, screen.itemId)
                     is Screen.Player -> PlayerScreen(nav, screen.itemId)

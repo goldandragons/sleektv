@@ -139,6 +139,7 @@ fun LibraryScreen(nav: Nav, view: BaseItem) {
             selectedId = view.id,
             onHome = { nav.resetTo(Screen.Home) },
             onView = { if (it.id != view.id) nav.push(Screen.Library(it)) },
+            onSearch = { nav.push(Screen.Search) },
             onAccount = { nav.push(Screen.Account) },
             modifier = Modifier.align(Alignment.TopCenter),
         )
