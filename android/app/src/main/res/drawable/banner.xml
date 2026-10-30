@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 320x180 Android TV launcher banner: black field, red play mark, "SleekTV" wordmark built from shapes. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="320dp"
+    android:height="180dp"
+    android:viewportWidth="320"
+    android:viewportHeight="180">
+    <path android:fillColor="#000000" android:pathData="M0,0h320v180h-320z" />
+    <path android:fillColor="#E50914" android:pathData="M40,62 L40,118 L88,90 Z" />
+    <!-- S -->
+    <path android:fillColor="#FFFFFF" android:pathData="M108,70h28v8h-20v6h20v26h-28v-8h20v-10h-20z" />
+    <!-- L -->
+    <path android:fillColor="#FFFFFF" android:pathData="M142,70h8v32h18v8h-26z" />
+    <!-- E -->
+    <path android:fillColor="#FFFFFF" android:pathData="M172,70h26v8h-18v8h16v8h-16v8h18v8h-26z" />
+    <!-- E -->
+    <path android:fillColor="#FFFFFF" android:pathData="M202,70h26v8h-18v8h16v8h-16v8h18v8h-26z" />
+    <!-- K -->
+    <path android:fillColor="#FFFFFF" android:pathData="M232,70h8v16l14,-16h10l-16,18l17,22h-10l-15,-20v20h-8z" />
+    <!-- TV underline -->
+    <path android:fillColor="#E50914" android:pathData="M108,118h160v4h-160z" />
+</vector>

@@ -1,0 +1,58 @@
+name: Build SleekTV
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  android:
+    name: Android TV app (APK)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Build APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Rename APK
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk SleekTV.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SleekTV-apk
+          path: SleekTV.apk
+
+  plugin:
+    name: Jellyfin plugin (zip)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Build plugin
+        run: dotnet publish plugin/Jellyfin.Plugin.SleekTV/Jellyfin.Plugin.SleekTV.csproj -c Release -o out
+
+      - name: Package for the plugins folder
+        run: |
+          mkdir -p "pkg/SleekTV_0.1.0.0"
+          cp out/Jellyfin.Plugin.SleekTV.dll "pkg/SleekTV_0.1.0.0/"
+          cp plugin/meta.json "pkg/SleekTV_0.1.0.0/"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SleekTV-plugin
+          path: pkg/
