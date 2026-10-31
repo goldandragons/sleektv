@@ -36,7 +36,22 @@
                 #SleekTVConfigPage .sk-slider { margin: .4em 0 1.1em; }
                 #SleekTVConfigPage .sk-slider label { display: flex; justify-content: space-between; font-size: .95em; margin-bottom: .35em; }
                 #SleekTVConfigPage .sk-slider output { font-variant-numeric: tabular-nums; opacity: .85; font-weight: 600; }
-                #SleekTVConfigPage input[type=range] { width: 100%; accent-color: var(--sk-accent, #e50914); height: 1.4em; cursor: pointer; }
+                #SleekTVConfigPage input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 22px; margin: 0; padding: 0; background: transparent; border: none; cursor: pointer; }
+                #SleekTVConfigPage input[type=range]:focus { outline: none; }
+                #SleekTVConfigPage input[type=range]::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; background: linear-gradient(to right, var(--sk-accent, #e50914) 0 var(--fill, 50%), rgba(255,255,255,.22) var(--fill, 50%) 100%); }
+                #SleekTVConfigPage input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; margin-top: -6px; border-radius: 50%; background: #fff; border: none; box-shadow: 0 1px 4px rgba(0,0,0,.5); }
+                #SleekTVConfigPage input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 4px rgba(255,255,255,.3); }
+                #SleekTVConfigPage input[type=range]::-moz-range-track { height: 6px; border-radius: 3px; background: rgba(255,255,255,.22); }
+                #SleekTVConfigPage input[type=range]::-moz-range-progress { height: 6px; border-radius: 3px; background: var(--sk-accent, #e50914); }
+                #SleekTVConfigPage input[type=range]::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: #fff; border: none; box-shadow: 0 1px 4px rgba(0,0,0,.5); }
+
+                /* Option buttons in place of dropdowns (native dropdowns don't open in some desktop apps). */
+                #SleekTVConfigPage .sk-choice { margin: .3em 0 1.1em; }
+                #SleekTVConfigPage .sk-choice-label { font-size: .95em; margin-bottom: .45em; opacity: .9; }
+                #SleekTVConfigPage .sk-chips { display: flex; flex-wrap: wrap; gap: .4em; }
+                #SleekTVConfigPage .sk-chips button { background: rgba(255,255,255,.08); color: inherit; border: 1px solid rgba(255,255,255,.12); border-radius: 999px; padding: .4em .95em; cursor: pointer; font: inherit; font-size: .9em; }
+                #SleekTVConfigPage .sk-chips button:hover { background: rgba(255,255,255,.16); }
+                #SleekTVConfigPage .sk-chips button.on { background: var(--sk-accent, #e50914); border-color: transparent; color: #fff; }
 
                 /* Colors */
                 #SleekTVConfigPage .sk-color { display: flex; align-items: center; gap: .7em; margin: .5em 0 1em; }
@@ -401,6 +416,8 @@ subtitles { mode: jellyfin|default|always|forced|off; language: eng; size: 120%;
                 all('input[type=range]').forEach(function (el) {
                     var out = el.parentNode.querySelector('output');
                     if (out) out.textContent = sliderText(el);
+                    var min = parseFloat(el.min) || 0, max = parseFloat(el.max) || 100;
+                    el.style.setProperty('--fill', ((parseFloat(el.value) - min) / (max - min) * 100) + '%');
                 });
                 all('.sk-color').forEach(function (box) {
                     var input = box.querySelector('input[type=color]');
@@ -620,7 +637,45 @@ subtitles { mode: jellyfin|default|always|forced|off; language: eng; size: 120%;
                 return html;
             }
 
+            function buildChoices() {
+                all('select[data-cfg]').forEach(function (select) {
+                    if (select.dataset.chips) return;
+                    select.dataset.chips = '1';
+                    var holder = select.closest('.selectContainer') || select.parentNode;
+                    var box = document.createElement('div');
+                    box.className = 'sk-choice';
+                    box.innerHTML = '<div class="sk-choice-label">' + esc(select.getAttribute('label') || '') + '</div><div class="sk-chips"></div>';
+                    var chips = box.querySelector('.sk-chips');
+                    Array.prototype.forEach.call(select.options, function (opt) {
+                        var b = document.createElement('button');
+                        b.type = 'button';
+                        b.textContent = opt.textContent;
+                        b.dataset.value = opt.value;
+                        b.addEventListener('click', function () {
+                            select.value = opt.value;
+                            select.dispatchEvent(new Event('change', { bubbles: true }));
+                            // Point the preview at what this setting affects.
+                            var holder2 = box.closest('[data-preview]');
+                            if (holder2) showPreview(holder2.dataset.preview);
+                        });
+                        chips.appendChild(b);
+                    });
+                    holder.parentNode.insertBefore(box, holder);
+                    holder.style.display = 'none';
+                    select._skChips = chips;
+                });
+            }
+            function refreshChoices() {
+                all('select[data-cfg]').forEach(function (select) {
+                    if (!select._skChips) return;
+                    Array.prototype.forEach.call(select._skChips.children, function (b) {
+                        b.classList.toggle('on', b.dataset.value === select.value);
+                    });
+                });
+            }
+
             function render() {
+                refreshChoices();
                 syncBrand2();
                 updateSliderLabels();
                 var v = values();
@@ -676,17 +731,30 @@ subtitles { mode: jellyfin|default|always|forced|off; language: eng; size: 120%;
             form.addEventListener('change', render);
             window.addEventListener('resize', fitPreview);
 
-            // Clear any width limit Jellyfin puts on this page's containers (class names vary between versions).
+            // Jellyfin keeps plugin pages in a narrow column. Lift the width limit on every container
+            // around this page while it's open, and put the original values back when leaving it.
+            var widened = [];
             function useFullWidth() {
-                for (var el = form.parentElement; el; el = el.parentElement) {
-                    if (getComputedStyle(el).maxWidth !== 'none') el.style.maxWidth = 'none';
-                    if (el === page) break;
+                restoreWidth();
+                for (var el = form.parentElement; el && el !== document.body; el = el.parentElement) {
+                    if (getComputedStyle(el).maxWidth !== 'none') {
+                        widened.push([el, el.style.maxWidth]);
+                        el.style.maxWidth = 'none';
+                    }
                 }
                 fitPreview();
             }
+            function restoreWidth() {
+                widened.forEach(function (pair) { pair[0].style.maxWidth = pair[1]; });
+                widened = [];
+            }
+            ['pagehide', 'pagebeforehide', 'viewhide', 'viewbeforehide'].forEach(function (name) {
+                page.addEventListener(name, restoreWidth);
+            });
 
             // ---------- Load ----------
             page.addEventListener('pageshow', function () {
+                buildChoices();
                 useFullWidth();
                 Dashboard.showLoadingMsg();
                 ApiClient.getPluginConfiguration(pluginId).then(function (config) {

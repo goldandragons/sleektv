@@ -1,6 +1,6 @@
 {
   "category": "General",
-  "changelog": "Settings page uses the full width of the screen, with settings in columns on wide screens.",
+  "changelog": "Settings page fills the screen in any Jellyfin layout; option buttons instead of dropdowns (work in the desktop app); restyled sliders.",
   "description": "Remote layout settings for the SleekTV Android TV app, including CSS-style custom overrides.",
   "guid": "fec99f9b-3607-4532-8f5e-2acf55ce8388",
   "name": "SleekTV",
@@ -8,7 +8,7 @@
   "owner": "SleekTV",
   "targetAbi": "12.3.0.0",
   "timestamp": "2026-10-29T00:00:00.0000000Z",
-  "version": "0.3.4.0",
+  "version": "0.3.5.0",
   "status": "Active",
   "autoUpdate": false,
   "imagePath": "",
