@@ -82,6 +82,11 @@ class Nav(
         if (stack.size > 1) stack.removeAt(stack.lastIndex)
     }
 
+    /** Swap the current screen for another (e.g. next episode) without growing the back stack. */
+    fun replace(screen: Screen) {
+        if (stack.isNotEmpty()) stack[stack.lastIndex] = screen else stack.add(screen)
+    }
+
     fun resetTo(screen: Screen) {
         stack.clear()
         stack.add(screen)

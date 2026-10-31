@@ -136,6 +136,35 @@
                     <div class="inputContainer"><input is="emby-input" type="number" min="0" max="600" data-cfg="SkipButtonSeconds" label="Button shows for (seconds, 0 = whole intro)" /></div>
                 </div>
 
+                <h2>Subtitles</h2>
+                <p class="sleek-help">Pick a track during playback with the CC button. These settings decide what starts on and how subtitles look.</p>
+                <div class="sleek-grid">
+                    <div class="selectContainer">
+                        <select is="emby-select" data-cfg="SubtitleMode" label="Turn subtitles on">
+                            <option value="Jellyfin">Follow each user's Jellyfin settings</option>
+                            <option value="Default">When the file marks a track as default</option>
+                            <option value="Always">Always</option>
+                            <option value="ForcedOnly">Forced (foreign-language parts) only</option>
+                            <option value="Off">Off</option>
+                        </select>
+                    </div>
+                    <div class="inputContainer">
+                        <input is="emby-input" type="text" data-cfg="SubtitleLanguage" label="Preferred language" placeholder="eng" />
+                        <div class="fieldDescription">3-letter code (eng, spa, fra…). Ignored when following Jellyfin settings.</div>
+                    </div>
+                    <div class="inputContainer"><input is="emby-input" type="number" min="40" max="300" data-cfg="SubtitleSize" label="Size (% of normal)" /></div>
+                    <div class="inputContainer"><input is="emby-input" type="text" data-cfg="SubtitleColor" label="Text color (hex)" /></div>
+                    <div class="selectContainer">
+                        <select is="emby-select" data-cfg="SubtitleBackground" label="Style">
+                            <option value="Outline">Outline</option>
+                            <option value="Shadow">Drop shadow</option>
+                            <option value="Box">Dark box</option>
+                            <option value="None">Plain</option>
+                        </select>
+                    </div>
+                    <div class="inputContainer"><input is="emby-input" type="number" min="0" max="45" data-cfg="SubtitlePosition" label="Height from bottom (% of screen)" /></div>
+                </div>
+
                 <h2>Seerr</h2>
                 <p class="sleek-help">Connect Jellyseerr / Overseerr so the app can show a Request tab in Search and recommend titles to add on the home screen. The API key stays on this server; requests are made as each Jellyfin user, so their Seerr permissions apply.</p>
                 <div class="sleek-grid">
@@ -175,6 +204,9 @@ episodes { layout: list|grid|row; columns; thumb-width;
            seasons: tabs|stacked; order: asc|desc; overview: show|hide }
 player   { skip-intro: button|auto|off; skip-credits: button|auto|off;
            button-seconds }
+subtitles { mode: jellyfin|default|always|forced|off; language: eng;
+            size: 120%; color: #ffff00; background: outline|shadow|box|none;
+            position: 10% }
 
 Example:
 :root    { accent: #1db954; background: #0b0b0b; }

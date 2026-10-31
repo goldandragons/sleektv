@@ -41,6 +41,36 @@ data class UserData(
 data class MediaSource(
     @SerialName("Id") val id: String,
     @SerialName("Container") val container: String? = null,
+    @SerialName("MediaStreams") val mediaStreams: List<MediaStream> = emptyList(),
+)
+
+@Serializable
+data class MediaStream(
+    @SerialName("Index") val index: Int = 0,
+    @SerialName("Type") val type: String? = null, // Video | Audio | Subtitle
+    @SerialName("Codec") val codec: String? = null,
+    @SerialName("Language") val language: String? = null,
+    @SerialName("DisplayTitle") val displayTitle: String? = null,
+    @SerialName("Title") val title: String? = null,
+    @SerialName("IsExternal") val isExternal: Boolean = false,
+    @SerialName("IsDefault") val isDefault: Boolean = false,
+    @SerialName("IsForced") val isForced: Boolean = false,
+    @SerialName("IsTextSubtitleStream") val isTextSubtitleStream: Boolean = false,
+) {
+    val isSubtitle: Boolean get() = type == "Subtitle"
+}
+
+/** The parts of a user's Jellyfin playback settings the player follows. */
+@Serializable
+data class UserPlaybackConfig(
+    @SerialName("SubtitleMode") val subtitleMode: String? = null, // Default | Always | OnlyForced | None | Smart
+    @SerialName("SubtitleLanguagePreference") val subtitleLanguage: String? = null,
+    @SerialName("AudioLanguagePreference") val audioLanguage: String? = null,
+)
+
+@Serializable
+data class CurrentUser(
+    @SerialName("Configuration") val configuration: UserPlaybackConfig? = null,
 )
 
 @Serializable

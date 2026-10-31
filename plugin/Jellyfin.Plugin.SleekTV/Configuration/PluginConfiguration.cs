@@ -61,6 +61,14 @@ public class PluginConfiguration : BasePluginConfiguration
     public string SkipCreditsMode { get; set; } = "Button";
     public int SkipButtonSeconds { get; set; } = 10;
 
+    // Subtitles. Mode: Jellyfin (each user's own Jellyfin setting) | Default | Always | ForcedOnly | Off.
+    public string SubtitleMode { get; set; } = "Jellyfin";
+    public string SubtitleLanguage { get; set; } = string.Empty;
+    public int SubtitleSize { get; set; } = 100;
+    public string SubtitleColor { get; set; } = "#FFFFFF";
+    public string SubtitleBackground { get; set; } = "Outline";
+    public int SubtitlePosition { get; set; } = 8;
+
     // Seerr. The URL and key never leave the server; the app talks to Seerr through this plugin.
     public string SeerrUrl { get; set; } = string.Empty;
     public string SeerrApiKey { get; set; } = string.Empty;

@@ -59,6 +59,14 @@ data class LayoutConfig(
     val skipCreditsMode: String = "Button", // Button | Auto | Off
     val skipButtonSeconds: Int = 10, // how long the button stays up; 0 = whole segment
 
+    // Subtitles
+    val subtitleMode: String = "Jellyfin", // Jellyfin (each user's own setting) | Default | Always | ForcedOnly | Off
+    val subtitleLanguage: String = "", // e.g. "eng"; empty = no preference
+    val subtitleSize: Int = 100, // percent of the normal size
+    val subtitleColor: String = "#FFFFFF",
+    val subtitleBackground: String = "Outline", // Outline | Shadow | Box | None
+    val subtitlePosition: Int = 8, // distance from the bottom, percent of screen height
+
     // Seerr (the server only says whether it's set up; credentials stay on the server)
     val seerrEnabled: Boolean = false,
     val showSeerrOnHome: Boolean = true,
@@ -105,6 +113,8 @@ data class LayoutConfig(
         episodeGridColumns = episodeGridColumns.coerceIn(1, 10),
         episodeThumbWidth = episodeThumbWidth.coerceIn(80, 900),
         skipButtonSeconds = skipButtonSeconds.coerceIn(0, 600),
+        subtitleSize = subtitleSize.coerceIn(40, 300),
+        subtitlePosition = subtitlePosition.coerceIn(0, 45),
     )
 
     /** Button, Auto or Off for a given segment type. Recaps/previews follow the intro setting. */

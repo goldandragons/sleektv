@@ -17,6 +17,8 @@ import kotlin.math.roundToInt
  *   episodes { layout: list|grid|row; columns; thumb-width; seasons: tabs|stacked;
  *              order: asc|desc; overview: show|hide }
  *   player   { skip-intro: button|auto|off; skip-credits: button|auto|off; button-seconds }
+ *   subtitles { mode: jellyfin|default|always|forced|off; language: eng; size: 120%; color;
+ *               background: outline|shadow|box|none; position: 10% }
  *
  * Unknown selectors or properties are ignored, so a typo never breaks the app.
  */
@@ -141,6 +143,29 @@ object CustomStyles {
                     else -> null
                 }
                 "overview", "description" -> bool(v)?.let { c.copy(showEpisodeOverview = it) }
+                else -> null
+            }
+
+            "subtitles", "subtitle", "captions" -> when (prop) {
+                "mode", "display" -> when (v.lowercase()) {
+                    "jellyfin", "user" -> c.copy(subtitleMode = "Jellyfin")
+                    "default", "auto" -> c.copy(subtitleMode = "Default")
+                    "always", "on", "show", "block" -> c.copy(subtitleMode = "Always")
+                    "forced", "forced-only", "forcedonly" -> c.copy(subtitleMode = "ForcedOnly")
+                    "off", "none", "hide" -> c.copy(subtitleMode = "Off")
+                    else -> null
+                }
+                "language", "lang" -> c.copy(subtitleLanguage = v.trim('"', '\''))
+                "size", "font-size" -> int(v.removeSuffix("%"))?.let { c.copy(subtitleSize = it) }
+                "color" -> color(v)?.let { c.copy(subtitleColor = it) }
+                "background", "style", "edge" -> when (v.lowercase()) {
+                    "outline" -> c.copy(subtitleBackground = "Outline")
+                    "shadow", "drop-shadow" -> c.copy(subtitleBackground = "Shadow")
+                    "box", "background" -> c.copy(subtitleBackground = "Box")
+                    "none" -> c.copy(subtitleBackground = "None")
+                    else -> null
+                }
+                "position", "bottom" -> int(v.removeSuffix("%"))?.let { c.copy(subtitlePosition = it) }
                 else -> null
             }
 

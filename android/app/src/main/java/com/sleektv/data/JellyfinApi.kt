@@ -324,6 +324,14 @@ class JellyfinApi(private val session: Session) {
 
     // ---------- Playback ----------
 
+    /** The signed-in user's own subtitle/audio preferences from Jellyfin. */
+    suspend fun userPlaybackConfig(): UserPlaybackConfig? =
+        runCatching { get(CurrentUser.serializer(), "Users/Me").configuration }.getOrNull()
+
+    /** A text subtitle stream converted to WebVTT by the server (works for srt/ass/vtt/embedded text). */
+    fun subtitleUrl(itemId: String, mediaSourceId: String, streamIndex: Int): String =
+        url("Videos/$itemId/$mediaSourceId/Subtitles/$streamIndex/0/Stream.vtt").toString()
+
     fun directStreamUrl(itemId: String, mediaSourceId: String): String =
         url("Videos/$itemId/stream", mapOf("static" to true, "mediaSourceId" to mediaSourceId)).toString()
 
