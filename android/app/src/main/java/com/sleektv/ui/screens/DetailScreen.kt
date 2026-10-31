@@ -72,6 +72,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.focus.onFocusChanged
 
@@ -228,7 +229,8 @@ private fun DetailContent(nav: Nav, data: DetailData, playFocus: FocusRequester)
             modifier = Modifier.fillMaxSize(),
         ) {
             item(key = "header") {
-                Box(Modifier.fillParentMaxHeight(0.82f).fillMaxWidth()) {
+                // At least 82% of the screen, but taller when the title/description need it, so the buttons never get squashed.
+                Box(Modifier.fillMaxWidth().heightIn(min = (LocalConfiguration.current.screenHeightDp * 0.82f).dp)) {
                     Column(
                         Modifier
                             .align(Alignment.BottomStart)
@@ -265,7 +267,7 @@ private fun DetailContent(nav: Nav, data: DetailData, playFocus: FocusRequester)
                         }
                         item.overview?.takeIf { it.isNotBlank() }?.let {
                             Spacer(Modifier.height(14.dp))
-                            SText(it, size = scaledSp(15), color = c.muted, maxLines = 4, lineHeight = scaledSp(22))
+                            SText(it, size = scaledSp(15), color = c.muted, maxLines = 3, lineHeight = scaledSp(22))
                         }
                         Spacer(Modifier.height(22.dp))
                         // Coming back up to Play/Go to show: scroll to the very top so the whole banner shows.

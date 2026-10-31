@@ -13,8 +13,8 @@ android {
         applicationId = "com.sleektv"
         minSdk = 23
         targetSdk = 35
-        versionCode = 15
-        versionName = "0.15.0"
+        versionCode = 16
+        versionName = "0.16.0"
     }
 
     // One fixed key, so each new APK installs over the previous one on the TV.

@@ -384,9 +384,15 @@ private fun Hero(
     Box(
         Modifier
             .fillMaxWidth()
-            .height(layout.heroHeight.dp),
+            .heightIn(min = layout.heroHeight.dp), // grows if the text needs more room
     ) {
-        Crossfade(targetState = item, animationSpec = tween(700), label = "hero") { shown ->
+        // Backdrop and shading take the banner's size (set by the text below), never the image's.
+        Crossfade(
+            targetState = item,
+            animationSpec = tween(700),
+            label = "hero",
+            modifier = Modifier.matchParentSize(),
+        ) { shown ->
             AsyncImage(
                 model = api.backdrop(shown),
                 contentDescription = null,
@@ -395,10 +401,11 @@ private fun Hero(
                 modifier = Modifier.fillMaxSize(),
             )
         }
-        BackdropScrim()
+        Box(Modifier.matchParentSize()) { BackdropScrim() }
 
         Column(
             Modifier
+                .padding(top = if (layout.headerHidden) 24.dp else 88.dp) // clear of the header when it shows
                 .align(Alignment.BottomStart)
                 .padding(start = EDGE.dp, bottom = 18.dp)
                 .fillMaxWidth(0.48f),
