@@ -32,6 +32,12 @@ import com.sleektv.ui.screens.SearchScreen
 import com.sleektv.ui.screens.SeerrDetailScreen
 import com.sleektv.data.SeerrItem
 import com.sleektv.data.WebCss
+import androidx.compose.runtime.DisposableEffect
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import com.sleektv.ui.theme.LocalSleekColors
 import com.sleektv.ui.theme.SleekTheme
 
@@ -142,17 +148,33 @@ class Nav(
         }
     }
 
+    /** What happened the last time settings were fetched; shown on the Account screen. */
+    var layoutStatus by mutableStateOf("Settings not loaded yet")
+        private set
+
+    val layout: LayoutConfig get() = layoutState.value
+
     /** Pull the latest layout from the plugin. Keeps the cached one if the server can't be reached. */
     suspend fun refreshLayout() {
+        val time = java.text.DateFormat.getTimeInstance(java.text.DateFormat.SHORT).format(java.util.Date())
         try {
             val raw = app.api.layoutJson()
+            val problem = LayoutConfig.decodeProblem(raw)
+            if (problem != null) {
+                layoutStatus = "Couldn't read the plugin's settings ($time): $problem"
+                return
+            }
             app.session.cachedLayoutJson = raw
             layoutState.value = LayoutConfig.parse(raw, importedCss(raw))
+            layoutStatus = "Updated from your server at $time"
         } catch (e: ApiException) {
-            if (e.code == 401) logout()
-            // 404 = plugin not installed: just keep defaults.
+            when (e.code) {
+                401 -> logout()
+                404 -> layoutStatus = "The SleekTV plugin isn't installed on this server ($time). Using built-in defaults."
+                else -> layoutStatus = "Server error ${e.code} while loading settings ($time). Using the last saved copy."
+            }
         } catch (e: Exception) {
-            // Offline or server down: keep the cached layout.
+            layoutStatus = "Couldn't reach your server ($time). Using the last saved copy."
         }
     }
 }
@@ -166,6 +188,18 @@ fun SleekTvApp(app: SleekApp) {
     val nav = remember { Nav(app, stack, layout) }
 
     BackHandler(enabled = stack.size > 1) { nav.back() }
+
+    // Pick up settings changed on the server whenever the app comes back to the screen.
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME && app.session.isLoggedIn) {
+                app.appScope.launch(Dispatchers.Main) { nav.refreshLayout() }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     SleekTheme(layout.value) {
         Box(

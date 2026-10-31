@@ -71,6 +71,7 @@ import com.sleektv.ui.theme.scaledSp
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 private data class DetailData(
     val item: BaseItem,
@@ -123,6 +124,7 @@ fun DetailScreen(nav: Nav, itemId: String) {
     val playFocus = remember { FocusRequester() }
 
     LaunchedEffect(itemId) {
+        launch { nav.refreshLayout() } // so layout changes made on the server show up here too
         try {
             data = loadDetail(api, itemId)
             delay(150)

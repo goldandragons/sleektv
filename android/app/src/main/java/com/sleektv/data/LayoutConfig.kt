@@ -145,6 +145,11 @@ data class LayoutConfig(
         /** Just the Custom styles text from the plugin JSON (to find @import lines). */
         fun customStylesOf(raw: String?): String = decode(raw)?.customStyles.orEmpty()
 
+        /** Null if the plugin's JSON reads fine, otherwise a short reason. */
+        fun decodeProblem(raw: String): String? =
+            runCatching { json.decodeFromString(serializer(), raw) }.exceptionOrNull()
+                ?.let { (it.message ?: it.javaClass.simpleName).lineSequence().first().take(160) }
+
         private fun decode(raw: String?): LayoutConfig? =
             raw?.let { runCatching { json.decodeFromString(serializer(), it) }.getOrNull() }
     }

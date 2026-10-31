@@ -57,7 +57,7 @@ fun AccountScreen(nav: Nav) {
                         status = "Reloading…"
                         scope.launch {
                             nav.refreshLayout()
-                            status = "Layout updated from your server"
+                            status = null
                         }
                     },
                 )
@@ -66,7 +66,21 @@ fun AccountScreen(nav: Nav) {
                     onClick = { if (confirmSignOut) nav.logout() else confirmSignOut = true },
                 )
             }
-            status?.let { SText(it, size = 14.sp, color = c.muted) }
+            SText(status ?: nav.layoutStatus, size = 14.sp, color = c.muted)
+
+            // What the app is actually using, to compare with the plugin page.
+            val l = nav.layout
+            Spacer(Modifier.height(10.dp))
+            SText("Current layout", size = 15.sp, weight = FontWeight.SemiBold)
+            listOf(
+                "Episodes: ${l.episodeLayout}" + (if (l.episodeLayout.equals("Grid", true)) " · ${l.episodeGridColumns} columns" else "") +
+                    " · Seasons: ${l.seasonDisplay} · ${l.episodeSort}",
+                "Home rows: ${l.homeRowList.joinToString(", ")}",
+                "Banner: ${if (l.showHero) l.heroSource else "Off"} · Header: ${l.headerStyle}",
+                "Cards: ${l.posterStyle} · ${l.posterWidth}dp · Accent ${l.accentColor}",
+                "Subtitles: ${l.subtitleMode}" + (if (l.subtitleLanguage.isNotBlank()) " (${l.subtitleLanguage})" else "") +
+                    " · Skip intro: ${l.skipIntroMode} · Seerr: ${if (l.seerrEnabled) "on" else "off"}",
+            ).forEach { SText(it, size = 13.sp, color = c.faint) }
         }
     }
 }
