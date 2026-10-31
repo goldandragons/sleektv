@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The video surface plus SleekTV's own control bar (sleek_player_controls). -->
+<com.sleektv.ui.screens.SleekPlayerView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/sleek_player"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/black"
+    app:controller_layout_id="@layout/sleek_player_controls"
+    app:show_buffering="when_playing"
+    app:use_controller="true" />

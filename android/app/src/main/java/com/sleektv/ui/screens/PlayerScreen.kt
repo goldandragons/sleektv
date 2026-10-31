@@ -42,8 +42,12 @@ import androidx.media3.datasource.okhttp.OkHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.ui.CaptionStyleCompat
-import androidx.media3.ui.PlayerView
+import androidx.media3.ui.DefaultTimeBar
 import androidx.media3.ui.SubtitleView
+import android.view.LayoutInflater
+import android.widget.TextView
+import androidx.compose.ui.graphics.toArgb
+import com.sleektv.R
 import com.sleektv.data.BaseItem
 import com.sleektv.data.LayoutConfig
 import com.sleektv.data.MediaSegment
@@ -175,6 +179,8 @@ private fun VideoPlayer(nav: Nav, plan: PlaybackPlan) {
     val player = remember(item.id) {
         ExoPlayer.Builder(context)
             .setMediaSourceFactory(DefaultMediaSourceFactory(OkHttpDataSource.Factory(api.http)))
+            .setSeekBackIncrementMs(10_000)
+            .setSeekForwardIncrementMs(10_000)
             .build()
             .also { applyTrackPreferences(it, layout, plan.userConfig) }
     }
@@ -203,7 +209,7 @@ private fun VideoPlayer(nav: Nav, plan: PlaybackPlan) {
             override fun seekToPreviousMediaItem() = goPrevious()
         }
     }
-    var playerView by remember { mutableStateOf<PlayerView?>(null) }
+    var playerView by remember { mutableStateOf<SleekPlayerView?>(null) }
 
     DisposableEffect(player) {
         val startMs = (item.userData?.playbackPositionTicks ?: 0L) / 10_000L
@@ -275,7 +281,11 @@ private fun VideoPlayer(nav: Nav, plan: PlaybackPlan) {
     LaunchedEffect(player) {
         while (isActive) {
             positionMs = player.currentPosition
-            delay(400)
+            // Right-hand side of the timeline: time remaining.
+            val duration = player.duration
+            playerView?.findViewById<TextView>(R.id.sleek_remaining)?.text =
+                if (duration == C.TIME_UNSET || duration <= 0) "" else "-" + formatTime(duration - positionMs)
+            delay(250)
         }
     }
 
@@ -336,10 +346,14 @@ private fun VideoPlayer(nav: Nav, plan: PlaybackPlan) {
     ) {
         AndroidView(
             factory = { ctx ->
-                PlayerView(ctx).apply {
+                (LayoutInflater.from(ctx).inflate(R.layout.sleek_player_view, null) as SleekPlayerView).apply {
                     this.player = controlsPlayer
                     useController = true
                     controllerShowTimeoutMs = 4000
+                    // Timeline in the theme's accent color.
+                    findViewById<DefaultTimeBar>(androidx.media3.ui.R.id.exo_progress)?.setPlayedColor(
+                        layout.accentColor.toColorOr(Color(0xFFE50914)).toArgb(),
+                    )
                     // ⏮ previous episode · ⏪ rewind · ⏯ · ⏩ fast-forward · ⏭ next episode
                     setShowPreviousButton(plan.previous != null || plan.next != null)
                     setShowNextButton(plan.previous != null || plan.next != null)
@@ -440,6 +454,15 @@ private fun applyTrackPreferences(player: ExoPlayer, layout: LayoutConfig, user:
         else -> Unit
     }
     player.trackSelectionParameters = params.build()
+}
+
+/** 1:02:03 or 12:34. */
+private fun formatTime(ms: Long): String {
+    val total = (ms.coerceAtLeast(0L) + 500) / 1000
+    val h = total / 3600
+    val m = (total % 3600) / 60
+    val s = total % 60
+    return if (h > 0) String.format("%d:%02d:%02d", h, m, s) else String.format("%d:%02d", m, s)
 }
 
 /** Size, color, background and height of subtitles, from the plugin settings. */
