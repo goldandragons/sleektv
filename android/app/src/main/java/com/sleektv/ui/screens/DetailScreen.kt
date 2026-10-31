@@ -123,6 +123,7 @@ private fun groupSeasons(data: DetailData, layout: LayoutConfig): List<SeasonGro
 fun DetailScreen(nav: Nav, itemId: String) {
     val api = nav.app.api
     var data by remember { mutableStateOf<DetailData?>(null) }
+    val reloadScope = rememberCoroutineScope()
     var error by remember { mutableStateOf<String?>(null) }
     val playFocus = remember { FocusRequester() }
 
@@ -141,12 +142,16 @@ fun DetailScreen(nav: Nav, itemId: String) {
     when {
         d == null && error != null -> CenterMessage(error.orEmpty())
         d == null -> CenterMessage("Loading…")
-        else -> ScrollOnlyWhenNeeded { DetailContent(nav, d, playFocus) }
+        else -> ScrollOnlyWhenNeeded {
+            DetailContent(nav, d, playFocus, onChanged = {
+                reloadScope.launch { runCatching { loadDetail(api, itemId) }.getOrNull()?.let { data = it } }
+            })
+        }
     }
 }
 
 @Composable
-private fun DetailContent(nav: Nav, data: DetailData, playFocus: FocusRequester) {
+private fun DetailContent(nav: Nav, data: DetailData, playFocus: FocusRequester, onChanged: () -> Unit) {
     val api = nav.app.api
     val layout = LocalLayout.current
     val c = LocalSleekColors.current
@@ -289,6 +294,7 @@ private fun DetailContent(nav: Nav, data: DetailData, playFocus: FocusRequester)
                                 primary = true,
                                 modifier = Modifier.focusRequester(playFocus),
                             )
+                            WatchedToggle(nav, item, onChanged)
                             if (item.isEpisode && item.seriesId != null) {
                                 SleekButton("Go to show", onClick = { nav.push(Screen.Detail(item.seriesId)) })
                             }
@@ -508,6 +514,67 @@ private fun EpisodeListRow(nav: Nav, ep: BaseItem) {
                     Spacer(Modifier.height(8.dp))
                     SText(it, size = scaledSp(14), color = c.muted, maxLines = 3, lineHeight = scaledSp(20))
                 }
+            }
+        }
+    }
+}
+
+
+/**
+ * Round ✓ next to Play: filled when watched, outlined when not. Spells out what it will do
+ * while highlighted. For a show it marks every episode.
+ */
+@Composable
+private fun WatchedToggle(nav: Nav, item: BaseItem, onChanged: () -> Unit) {
+    val c = LocalSleekColors.current
+    val scope = rememberCoroutineScope()
+    var watched by remember(item.id, item.userData?.played) { mutableStateOf(item.isWatched) }
+    var focused by remember { mutableStateOf(false) }
+    var busy by remember { mutableStateOf(false) }
+    SleekClickable(
+        onClick = {
+            if (busy) return@SleekClickable
+            busy = true
+            val target = !watched
+            watched = target // update right away; undo if the server says no
+            scope.launch {
+                try {
+                    nav.app.api.setWatched(item.id, target)
+                    onChanged()
+                } catch (e: Exception) {
+                    watched = !target
+                } finally {
+                    busy = false
+                }
+            }
+        },
+        shape = RoundedCornerShape(50),
+        focusScale = 1.06f,
+        containerColor = if (watched) c.accent else Color.White.copy(alpha = 0.14f),
+        focusedContainerColor = if (watched) c.accent else Color.White,
+        contentColor = Color.White,
+        focusedContentColor = if (watched) Color.White else Color.Black,
+        modifier = Modifier.onFocusChanged { focused = it.isFocused },
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(horizontal = if (focused) 20.dp else 14.dp, vertical = 11.dp),
+        ) {
+            androidx.tv.material3.Text(
+                text = "✓",
+                fontFamily = com.sleektv.ui.theme.Inter,
+                fontWeight = FontWeight.Bold,
+                fontSize = scaledSp(16),
+            )
+            if (focused) {
+                Spacer(Modifier.width(8.dp))
+                androidx.tv.material3.Text(
+                    text = if (watched) "Mark as unwatched" else "Mark as watched",
+                    fontFamily = com.sleektv.ui.theme.Inter,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = scaledSp(15),
+                    maxLines = 1,
+                )
             }
         }
     }

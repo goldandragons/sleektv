@@ -267,6 +267,25 @@ class JellyfinApi(private val session: Session) {
         mapOf("userId" to userId, "limit" to 16, "fields" to fields),
     ).items
 
+    // ---------- Watched status ----------
+
+    /** Marks a movie, episode, season or whole show as watched or unwatched. */
+    suspend fun setWatched(itemId: String, watched: Boolean) = withContext(Dispatchers.IO) {
+        fun request(path: String) = Request.Builder()
+            .url(url(path, mapOf("userId" to userId)))
+            .method(if (watched) "POST" else "DELETE", if (watched) ByteArray(0).toRequestBody(null) else null)
+            .build()
+        // Current route first; older servers only know the per-user one.
+        val code = http.newCall(request("UserPlayedItems/$itemId")).execute().use { it.code }
+        if (code == 404 || code == 405) {
+            http.newCall(request("Users/$userId/PlayedItems/$itemId")).execute().use {
+                if (!it.isSuccessful) throw ApiException(it.code, "Couldn't update watched status")
+            }
+        } else if (code !in 200..299) {
+            throw ApiException(code, "Couldn't update watched status")
+        }
+    }
+
     // ---------- Seerr (through the SleekTV plugin) ----------
 
     suspend fun seerrSearch(query: String): List<SeerrItem> =
