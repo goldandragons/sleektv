@@ -379,7 +379,7 @@ class JellyfinApi(private val session: Session) {
 
     private fun image(itemId: String, type: String, tag: String?, width: Int, index: Int? = null): String {
         val path = if (index != null) "Items/$itemId/Images/$type/$index" else "Items/$itemId/Images/$type"
-        return url(path, mapOf("fillWidth" to width, "quality" to 90, "tag" to tag)).toString()
+        return url(path, mapOf("fillWidth" to width, "quality" to 80, "tag" to tag)).toString()
     }
 
     /** Portrait poster. Episodes use their show's poster. */
@@ -390,7 +390,7 @@ class JellyfinApi(private val session: Session) {
         else -> null
     }
 
-    fun backdrop(item: BaseItem, width: Int = 1920): String? = when {
+    fun backdrop(item: BaseItem, width: Int = 1280): String? = when {
         item.backdropImageTags.isNotEmpty() -> image(item.id, "Backdrop", item.backdropImageTags[0], width, 0)
         item.parentBackdropItemId != null && item.parentBackdropImageTags.isNotEmpty() ->
             image(item.parentBackdropItemId, "Backdrop", item.parentBackdropImageTags[0], width, 0)

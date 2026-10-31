@@ -28,6 +28,17 @@ class SleekApp : Application(), ImageLoaderFactory {
     override fun newImageLoader(): ImageLoader =
         ImageLoader.Builder(this)
             .okHttpClient(api.http)
-            .crossfade(true)
+            .crossfade(false) // fading every card in costs frames on TV boxes
+            .allowRgb565(true) // half the memory per image, decodes faster; fine for photos
+            .respectCacheHeaders(false) // Jellyfin image URLs carry a tag, so cached copies are safe to reuse
+            .memoryCache {
+                coil.memory.MemoryCache.Builder(this).maxSizePercent(0.25).build()
+            }
+            .diskCache {
+                coil.disk.DiskCache.Builder()
+                    .directory(cacheDir.resolve("images"))
+                    .maxSizeBytes(250L * 1024 * 1024)
+                    .build()
+            }
             .build()
 }

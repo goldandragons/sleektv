@@ -145,6 +145,11 @@ data class LayoutConfig(
         /** Just the Custom styles text from the plugin JSON (to find @import lines). */
         fun customStylesOf(raw: String?): String = decode(raw)?.customStyles.orEmpty()
 
+        /** The finished layout (themes and custom styles already applied), saved for a fast start. */
+        fun encodeFinal(config: LayoutConfig): String = json.encodeToString(serializer(), config)
+
+        fun decodeFinal(raw: String?): LayoutConfig? = decode(raw)?.sanitized()
+
         /** Null if the plugin's JSON reads fine, otherwise a short reason. */
         fun decodeProblem(raw: String): String? =
             runCatching { json.decodeFromString(serializer(), raw) }.exceptionOrNull()

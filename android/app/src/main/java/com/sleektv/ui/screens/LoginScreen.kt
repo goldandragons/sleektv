@@ -70,7 +70,7 @@ fun LoginScreen(nav: Nav) {
     LaunchedEffect(Unit) { runCatching { firstField.requestFocus() } }
 
     suspend fun finishSignIn() {
-        nav.refreshLayout()
+        nav.refreshLayout(force = true)
         nav.resetTo(Screen.Home)
     }
 

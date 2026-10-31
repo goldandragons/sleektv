@@ -153,6 +153,11 @@ fun HomeScreen(nav: Nav) {
     // Seerr recommendations load separately so a slow or offline Seerr never holds up the home screen.
     LaunchedEffect(layout.seerrEnabled, layout.showSeerrOnHome) {
         if (!layout.seerrEnabled || !layout.showSeerrOnHome) return@LaunchedEffect
+        // Trending lists barely change; reuse them for 10 minutes instead of asking Seerr on every visit.
+        if (nav.discoverCache != null && System.currentTimeMillis() - nav.discoverFetchedAt < 10 * 60 * 1000L) {
+            return@LaunchedEffect
+        }
+        nav.discoverFetchedAt = System.currentTimeMillis()
         coroutineScope {
             // Only suggest things that aren't already in the library.
             fun List<SeerrItem>.toAdd() = filterNot { it.isAvailable }

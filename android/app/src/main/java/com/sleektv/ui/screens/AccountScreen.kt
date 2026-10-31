@@ -56,7 +56,7 @@ fun AccountScreen(nav: Nav) {
                     onClick = {
                         status = "Reloading…"
                         scope.launch {
-                            nav.refreshLayout()
+                            nav.refreshLayout(force = true)
                             status = null
                         }
                     },

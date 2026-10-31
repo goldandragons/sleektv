@@ -13,8 +13,8 @@ android {
         applicationId = "com.sleektv"
         minSdk = 23
         targetSdk = 35
-        versionCode = 11
-        versionName = "0.11.0"
+        versionCode = 12
+        versionName = "0.12.0"
     }
 
     // One fixed key, so each new APK installs over the previous one on the TV.
@@ -28,8 +28,13 @@ android {
     }
 
     buildTypes {
+        // The APK people install. Optimized with R8, and signed with the same key as earlier
+        // builds so it installs over them.
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+            signingConfig = signingConfigs.getByName("debug")
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
 

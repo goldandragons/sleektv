@@ -38,6 +38,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import com.sleektv.ui.theme.LocalSleekColors
 import com.sleektv.ui.theme.SleekTheme
 
@@ -74,6 +75,7 @@ class Nav(
     /** Home content + scroll position survive trips into detail pages and the player. */
     var homeCache by mutableStateOf<HomeData?>(null)
     var discoverCache by mutableStateOf<DiscoverData?>(null)
+    var discoverFetchedAt = 0L
 
     /** Which Search tab was last open: library or Seerr. */
     var searchSeerrTab by mutableStateOf(false)
@@ -136,11 +138,17 @@ class Nav(
             session.importsCss = ""
             return ""
         }
+        // Same themes as last time and downloaded recently: reuse the saved copy.
+        val ageMs = System.currentTimeMillis() - session.importsFetchedAt
+        if (session.importsKey == key && session.importsCss.isNotBlank() && ageMs in 0 until 6 * 60 * 60 * 1000L) {
+            return session.importsCss
+        }
         val fresh = WebCss.resolveImports(styles) { url -> app.api.fetchText(url) }
         return when {
             fresh.isNotBlank() -> {
                 session.importsKey = key
                 session.importsCss = fresh
+                session.importsFetchedAt = System.currentTimeMillis()
                 fresh
             }
             session.importsKey == key -> session.importsCss
@@ -148,24 +156,37 @@ class Nav(
         }
     }
 
+    private var lastRefreshAt = 0L
+
     /** What happened the last time settings were fetched; shown on the Account screen. */
     var layoutStatus by mutableStateOf("Settings not loaded yet")
         private set
 
     val layout: LayoutConfig get() = layoutState.value
 
-    /** Pull the latest layout from the plugin. Keeps the cached one if the server can't be reached. */
-    suspend fun refreshLayout() {
+    /**
+     * Pull the latest layout from the plugin. Keeps the cached one if the server can't be reached.
+     * Skips the request if settings were fetched in the last 30 seconds, unless [force]d.
+     */
+    suspend fun refreshLayout(force: Boolean = false) {
+        val now = System.currentTimeMillis()
+        if (!force && now - lastRefreshAt < 30_000) return
+        lastRefreshAt = now
         val time = java.text.DateFormat.getTimeInstance(java.text.DateFormat.SHORT).format(java.util.Date())
         try {
             val raw = app.api.layoutJson()
-            val problem = LayoutConfig.decodeProblem(raw)
-            if (problem != null) {
+            // Parsing themes can be heavy (hundreds of CSS rules): keep it off the UI thread.
+            val (problem, parsed) = withContext(Dispatchers.Default) {
+                val problem = LayoutConfig.decodeProblem(raw)
+                problem to if (problem == null) LayoutConfig.parse(raw, importedCss(raw)) else null
+            }
+            if (problem != null || parsed == null) {
                 layoutStatus = "Couldn't read the plugin's settings ($time): $problem"
                 return
             }
             app.session.cachedLayoutJson = raw
-            layoutState.value = LayoutConfig.parse(raw, importedCss(raw))
+            if (parsed != layoutState.value) layoutState.value = parsed // only redraw when something changed
+            app.session.finalLayoutJson = LayoutConfig.encodeFinal(parsed)
             layoutStatus = "Updated from your server at $time"
         } catch (e: ApiException) {
             when (e.code) {
@@ -184,7 +205,12 @@ fun SleekTvApp(app: SleekApp) {
     val stack = remember {
         mutableStateListOf<Screen>(if (app.session.isLoggedIn) Screen.Home else Screen.Login)
     }
-    val layout = remember { mutableStateOf(LayoutConfig.parse(app.session.cachedLayoutJson, app.session.importsCss)) }
+    val layout = remember {
+        mutableStateOf(
+            LayoutConfig.decodeFinal(app.session.finalLayoutJson)
+                ?: LayoutConfig.parse(app.session.cachedLayoutJson, app.session.importsCss),
+        )
+    }
     val nav = remember { Nav(app, stack, layout) }
 
     BackHandler(enabled = stack.size > 1) { nav.back() }

@@ -33,6 +33,16 @@ class Session(context: Context) {
         get() = prefs.getString("importsKey", null)
         set(value) = prefs.edit().putString("importsKey", value).apply()
 
+    /** The fully worked-out layout from last time, so the app starts without re-reading themes. */
+    var finalLayoutJson: String?
+        get() = prefs.getString("finalLayout", null)
+        set(value) = prefs.edit().putString("finalLayout", value).apply()
+
+    /** When the @import themes were last downloaded (ms since epoch). */
+    var importsFetchedAt: Long
+        get() = prefs.getLong("importsFetchedAt", 0L)
+        set(value) = prefs.edit().putLong("importsFetchedAt", value).apply()
+
     var importsCss: String
         get() = prefs.getString("importsCss", null).orEmpty()
         set(value) = prefs.edit().putString("importsCss", value).apply()

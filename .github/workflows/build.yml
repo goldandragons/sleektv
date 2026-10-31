@@ -27,7 +27,7 @@ jobs:
         run: |
           chmod +x gradlew
           set -o pipefail
-          if ! ./gradlew assembleDebug --no-daemon 2>&1 | tee build.log; then
+          if ! ./gradlew assembleRelease --no-daemon 2>&1 | tee build.log; then
             # Surface compile errors as annotations (readable from the Actions UI and API).
             grep -E "^e: |What went wrong|> .*(error|Could not|failed)" build.log | head -60 > errors.txt || true
             if [ ! -s errors.txt ]; then tail -60 build.log > errors.txt; fi
@@ -40,7 +40,7 @@ jobs:
           fi
 
       - name: Rename APK
-        run: cp android/app/build/outputs/apk/debug/app-debug.apk SleekTV.apk
+        run: cp android/app/build/outputs/apk/release/app-release.apk SleekTV.apk
 
       - uses: actions/upload-artifact@v4
         with:
