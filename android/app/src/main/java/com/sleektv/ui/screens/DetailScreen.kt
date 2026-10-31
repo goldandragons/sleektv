@@ -224,7 +224,7 @@ private fun DetailContent(nav: Nav, data: DetailData, playFocus: FocusRequester)
 
         LazyColumn(
             state = listState,
-            contentPadding = PaddingValues(bottom = 64.dp),
+            contentPadding = PaddingValues(bottom = 160.dp),
             modifier = Modifier.fillMaxSize(),
         ) {
             item(key = "header") {

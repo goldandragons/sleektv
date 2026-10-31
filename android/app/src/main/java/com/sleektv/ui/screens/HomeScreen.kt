@@ -201,7 +201,7 @@ private fun HomeContent(nav: Nav, home: HomeData, discover: DiscoverData?, first
     Box(Modifier.fillMaxSize()) {
         LazyColumn(
             state = listState,
-            contentPadding = PaddingValues(top = topPad, bottom = 56.dp),
+            contentPadding = PaddingValues(top = topPad, bottom = 160.dp),
             modifier = Modifier
                 .fillMaxSize()
                 .focusRequester(contentFocus),

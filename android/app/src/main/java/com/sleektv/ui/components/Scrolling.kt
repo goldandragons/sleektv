@@ -5,7 +5,6 @@ import androidx.compose.foundation.gestures.BringIntoViewSpec
 import androidx.compose.foundation.gestures.LocalBringIntoViewSpec
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import kotlin.math.abs
 
 /**
  * On Android TV, Compose lists scroll the focused item to about 30% from the top. That pushes
@@ -15,12 +14,18 @@ import kotlin.math.abs
 @OptIn(ExperimentalFoundationApi::class)
 private val ScrollOnlyIfNeeded = object : BringIntoViewSpec {
     override fun calculateScrollDistance(offset: Float, size: Float, containerSize: Float): Float {
+        // Keep focused items clear of the edges: room for the focus zoom, the title under a card,
+        // and TV overscan. More room at the bottom/right, where titles sit and the next item peeks in.
+        val lead = containerSize * 0.08f
+        val trail = containerSize * 0.20f
+        val start = lead
+        val end = containerSize - trail
         val trailingEdge = offset + size
         return when {
-            offset >= 0f && trailingEdge <= containerSize -> 0f // already fully visible
-            offset < 0f && trailingEdge > containerSize -> 0f // bigger than the screen and covering it
-            abs(offset) < abs(trailingEdge - containerSize) -> offset // closer to the top: reveal the top
-            else -> trailingEdge - containerSize // reveal the bottom
+            size > end - start -> offset - start // taller than the comfortable area: line up its top
+            offset >= start && trailingEdge <= end -> 0f // already comfortably visible
+            offset < start -> offset - start // scroll up/left just enough
+            else -> trailingEdge - end // scroll down/right just enough
         }
     }
 }
