@@ -158,9 +158,30 @@ data class LayoutConfig(
          */
         fun parse(raw: String?, importedCss: String = ""): LayoutConfig {
             val base = decode(raw) ?: LayoutConfig()
-            val withTheme = WebCss.apply(base, importedCss)
+            val withTheme = keepChangedSettings(base, WebCss.apply(base, importedCss))
             val withWebRules = WebCss.apply(withTheme, base.customStyles)
             return CustomStyles.apply(withWebRules, base.customStyles).sanitized()
+        }
+
+        private val DEFAULTS = LayoutConfig()
+
+        /**
+         * An imported theme (@import) only fills in settings still at their default. Anything changed on
+         * the settings page (say, the accent color) keeps the value picked there.
+         */
+        private fun keepChangedSettings(settings: LayoutConfig, themed: LayoutConfig): LayoutConfig {
+            fun <T> pick(get: (LayoutConfig) -> T): T =
+                if (get(settings) != get(DEFAULTS)) get(settings) else get(themed)
+            return themed.copy(
+                accentColor = pick { it.accentColor },
+                backgroundColor = pick { it.backgroundColor },
+                surfaceColor = pick { it.surfaceColor },
+                textColor = pick { it.textColor },
+                cardCornerRadius = pick { it.cardCornerRadius },
+                focusScale = pick { it.focusScale },
+                sectionTitleSize = pick { it.sectionTitleSize },
+                detailTitleSize = pick { it.detailTitleSize },
+            )
         }
 
         /** Just the Custom styles text from the plugin JSON (to find @import lines). */
