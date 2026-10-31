@@ -218,7 +218,13 @@ private fun HomeContent(nav: Nav, home: HomeData, discover: DiscoverData?, first
                         playFocus = heroFocus,
                         onPlay = { nav.play(it) },
                         onInfo = { nav.open(it) },
-                        onFocusChange = { heroFocused = it },
+                        onFocusChange = { focused ->
+                            heroFocused = focused
+                            // Back up on the banner: show all of it, not just the buttons.
+                            if (focused && (listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 0)) {
+                                scope.launch { listState.animateScrollToItem(0) }
+                            }
+                        },
                         onUp = {
                             if (layout.headerHidden) {
                                 false

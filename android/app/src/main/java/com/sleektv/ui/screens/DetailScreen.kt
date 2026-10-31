@@ -72,6 +72,8 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.focus.onFocusChanged
 
 private data class DetailData(
     val item: BaseItem,
@@ -180,6 +182,7 @@ private fun DetailContent(nav: Nav, data: DetailData, playFocus: FocusRequester)
 
     // Once you scroll past the title section (episodes, cast…), the backdrop blurs and dims.
     val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
     val pastHeader by remember {
         derivedStateOf { listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 120 }
     }
@@ -265,7 +268,15 @@ private fun DetailContent(nav: Nav, data: DetailData, playFocus: FocusRequester)
                             SText(it, size = scaledSp(15), color = c.muted, maxLines = 4, lineHeight = scaledSp(22))
                         }
                         Spacer(Modifier.height(22.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        // Coming back up to Play/Go to show: scroll to the very top so the whole banner shows.
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier.onFocusChanged { state ->
+                                if (state.hasFocus && (listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 0)) {
+                                    scope.launch { listState.animateScrollToItem(0) }
+                                }
+                            },
+                        ) {
                             SleekButton(
                                 text = playLabel,
                                 onClick = { nav.play(playTarget) },
