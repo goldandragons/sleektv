@@ -50,6 +50,14 @@ import com.sleektv.ui.Nav
 import com.sleektv.ui.Screen
 import com.sleektv.ui.components.SeerrRow
 import com.sleektv.ui.components.rememberHeaderVisible
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.withFrameNanos
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
+import kotlinx.coroutines.launch
 import androidx.compose.ui.ExperimentalComposeUiApi
 import com.sleektv.ui.components.BackdropScrim
 import com.sleektv.ui.components.CenterMessage
@@ -174,6 +182,11 @@ private fun HomeContent(nav: Nav, home: HomeData, discover: DiscoverData?, first
     val topPad = if (showHero || layout.headerHidden) 0.dp else 96.dp
     val listState = nav.homeListState
     val contentFocus = remember { FocusRequester() }
+    val headerEntry = remember { FocusRequester() }
+    val scope = rememberCoroutineScope()
+    var heroFocused by remember { mutableStateOf(false) }
+    var headerCalled by remember { mutableStateOf(false) } // Up pressed on the banner
+    LaunchedEffect(heroFocused) { if (heroFocused) headerCalled = false }
     val headerVisible = rememberHeaderVisible(
         atTop = { listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset < 40 },
         position = { listState.firstVisibleItemIndex * 100_000L + listState.firstVisibleItemScrollOffset },
@@ -199,6 +212,21 @@ private fun HomeContent(nav: Nav, home: HomeData, discover: DiscoverData?, first
                         playFocus = heroFocus,
                         onPlay = { nav.play(it) },
                         onInfo = { nav.open(it) },
+                        onFocusChange = { heroFocused = it },
+                        onUp = {
+                            if (layout.headerHidden) {
+                                false
+                            } else {
+                                // Bring the header back, then step up into it.
+                                headerCalled = true
+                                scope.launch {
+                                    withFrameNanos { }
+                                    withFrameNanos { }
+                                    runCatching { headerEntry.requestFocus() }
+                                }
+                                true
+                            }
+                        },
                     )
                 }
             }
@@ -303,8 +331,10 @@ private fun HomeContent(nav: Nav, home: HomeData, discover: DiscoverData?, first
             onSearch = { nav.push(Screen.Search) },
             onAccount = { nav.push(Screen.Account) },
             modifier = Modifier.align(Alignment.TopCenter),
-            visible = headerVisible,
+            // Hidden while you're on the banner so it doesn't cover the artwork.
+            visible = headerVisible && (!heroFocused || headerCalled),
             contentFocus = contentFocus,
+            entryFocus = headerEntry,
         )
     }
 }
@@ -317,8 +347,12 @@ private fun Hero(
     playFocus: FocusRequester?,
     onPlay: (BaseItem) -> Unit,
     onInfo: (BaseItem) -> Unit,
+    onFocusChange: (Boolean) -> Unit,
+    onUp: () -> Boolean,
 ) {
     val layout = LocalLayout.current
+    var playFocused by remember { mutableStateOf(false) }
+    var infoFocused by remember { mutableStateOf(false) }
     val c = LocalSleekColors.current
     var index by remember { mutableIntStateOf(0) }
     var hasFocus by remember { mutableStateOf(false) }
@@ -396,18 +430,55 @@ private fun Hero(
                 Spacer(Modifier.height(18.dp))
             }
             val resumable = (item.userData?.playbackPositionTicks ?: 0L) > 0L
-            Row(Modifier.onFocusChanged { hasFocus = it.hasFocus }) {
+            // Left from Play / Right from More info flips slides; Up hands focus to the header.
+            Row(
+                Modifier
+                    .onFocusChanged {
+                        hasFocus = it.hasFocus
+                        onFocusChange(it.hasFocus)
+                    }
+                    .onPreviewKeyEvent { e ->
+                        if (e.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                        when {
+                            e.key == Key.DirectionLeft && playFocused && items.size > 1 -> {
+                                index = (index - 1 + items.size) % items.size
+                                true
+                            }
+                            e.key == Key.DirectionRight && infoFocused && items.size > 1 -> {
+                                index = (index + 1) % items.size
+                                true
+                            }
+                            e.key == Key.DirectionUp -> onUp()
+                            else -> false
+                        }
+                    },
+            ) {
                 SleekButton(
                     text = if (resumable) "▶  Resume" else "▶  Play",
                     onClick = { onPlay(item) },
                     primary = true,
-                    modifier = if (playFocus != null) Modifier.focusRequester(playFocus) else Modifier,
+                    modifier = (if (playFocus != null) Modifier.focusRequester(playFocus) else Modifier)
+                        .onFocusChanged { playFocused = it.isFocused },
                 )
                 Spacer(Modifier.width(12.dp))
-                SleekButton(text = "More info", onClick = { onInfo(item) })
+                SleekButton(
+                    text = "More info",
+                    onClick = { onInfo(item) },
+                    modifier = Modifier.onFocusChanged { infoFocused = it.isFocused },
+                )
             }
             Spacer(Modifier.height(16.dp))
-            PagerDots(items.size, index % items.size)
+            if (items.size > 1) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    SText("‹", size = scaledSp(18), weight = FontWeight.Bold, color = if (hasFocus) c.text else c.faint)
+                    Spacer(Modifier.width(10.dp))
+                    PagerDots(items.size, index % items.size)
+                    Spacer(Modifier.width(10.dp))
+                    SText("›", size = scaledSp(18), weight = FontWeight.Bold, color = if (hasFocus) c.text else c.faint)
+                    Spacer(Modifier.width(12.dp))
+                    SText("${index % items.size + 1} / ${items.size}", size = scaledSp(12), color = c.faint)
+                }
+            }
         }
     }
 }

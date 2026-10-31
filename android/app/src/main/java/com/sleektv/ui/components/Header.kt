@@ -29,6 +29,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.runtime.rememberCoroutineScope
@@ -68,6 +69,7 @@ fun SleekHeader(
     modifier: Modifier = Modifier,
     visible: Boolean = true,
     contentFocus: FocusRequester? = null,
+    entryFocus: FocusRequester? = null, // lets the page move focus onto the current tab
 ) {
     val layout = LocalLayout.current
     if (layout.headerHidden) return
@@ -133,12 +135,15 @@ fun SleekHeader(
             }
             Spacer(Modifier.width(28.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.weight(1f)) {
-                NavPill("Home", selected = selectedId == null, leaving = leaving, onClick = onHome)
+                NavPill("Home", selected = selectedId == null, leaving = leaving, onClick = onHome,
+                    entry = entryFocus.takeIf { selectedId == null })
                 views.take(7).forEach { view ->
-                    NavPill(view.name.orEmpty(), selected = selectedId == view.id, leaving = leaving, onClick = { onView(view) })
+                    NavPill(view.name.orEmpty(), selected = selectedId == view.id, leaving = leaving, onClick = { onView(view) },
+                        entry = entryFocus.takeIf { selectedId == view.id })
                 }
             }
-            NavPill("Search", selected = selectedId == com.sleektv.ui.screens.SEARCH_TAB, leaving = leaving, onClick = onSearch)
+            NavPill("Search", selected = selectedId == com.sleektv.ui.screens.SEARCH_TAB, leaving = leaving, onClick = onSearch,
+                entry = entryFocus.takeIf { selectedId == com.sleektv.ui.screens.SEARCH_TAB })
             Spacer(Modifier.width(12.dp))
             SText(clock, size = scaledSp(14), color = c.muted, weight = FontWeight.Medium)
             Spacer(Modifier.width(12.dp))
@@ -170,12 +175,19 @@ fun rememberHeaderVisible(atTop: () -> Boolean, position: () -> Long): Boolean {
 }
 
 @Composable
-private fun NavPill(label: String, selected: Boolean, leaving: Boolean, onClick: () -> Unit) {
+private fun NavPill(
+    label: String,
+    selected: Boolean,
+    leaving: Boolean,
+    onClick: () -> Unit,
+    entry: FocusRequester? = null,
+) {
     val c = LocalSleekColors.current
     var focused by remember { mutableStateOf(false) }
     val focusable = !leaving || focused
     SleekClickable(
         modifier = Modifier
+            .then(if (entry != null) Modifier.focusRequester(entry) else Modifier)
             .onFocusChanged { focused = it.isFocused }
             .focusProperties { canFocus = focusable },
         onClick = onClick,
