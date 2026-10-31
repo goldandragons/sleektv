@@ -7,7 +7,8 @@ import kotlin.math.roundToInt
  * LayoutConfig setting, because the app is native and has no CSS engine.
  *
  *   :root    { accent; background; surface; text; font-scale }
- *   header   { style: floating|solid|hidden }
+ *   header   { style: floating|solid|hidden; scale: 1.2; opacity: 60%; search: show|hide; clock: show|hide }
+ *   brand    { primary: "Sleek"; primary-color: #fff; secondary: "TV"; secondary-color: #e50914 }
  *   hero     { display: none|block; height; title-size; rotate; source: continue|latest }
  *   section  { title-size; spacing }
  *   card     { width; radius; spacing; focus-scale; shape: portrait|landscape; titles; badges }
@@ -75,6 +76,20 @@ object CustomStyles {
                     else -> null
                 }
                 "display" -> bool(v)?.let { c.copy(headerStyle = if (it) "Floating" else "Hidden") }
+                "scale", "size", "zoom" -> num(v.removeSuffix("%"))?.let { c.copy(headerScale = if (it > 5) it / 100 else it) }
+                "opacity", "background-opacity" -> num(v.removeSuffix("%"))?.let {
+                    c.copy(headerOpacity = (if (it <= 1.0) it * 100 else it).toInt())
+                }
+                "search" -> bool(v)?.let { c.copy(headerShowSearch = it) }
+                "clock" -> bool(v)?.let { c.copy(headerShowClock = it) }
+                else -> null
+            }
+
+            "brand", "logo", "name" -> when (prop) {
+                "primary", "first", "text" -> c.copy(brandPrimary = v.trim('"', '\''))
+                "primary-color", "first-color", "color" -> color(v)?.let { c.copy(brandPrimaryColor = it) }
+                "secondary", "second" -> c.copy(brandSecondary = v.trim('"', '\''))
+                "secondary-color", "second-color" -> color(v)?.let { c.copy(brandSecondaryColor = it) }
                 else -> null
             }
 

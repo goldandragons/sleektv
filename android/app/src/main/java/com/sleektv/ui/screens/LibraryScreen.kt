@@ -161,7 +161,7 @@ fun LibraryScreen(nav: Nav, view: BaseItem) {
         atTop = { gridState.firstVisibleItemIndex == 0 && gridState.firstVisibleItemScrollOffset < 40 },
         position = { gridState.firstVisibleItemIndex * 100_000L + gridState.firstVisibleItemScrollOffset },
     )
-    val topPad = if (layout.headerHidden) 32.dp else 100.dp
+    val topPad = layout.headerSpaceDp.dp
     val showRail = letterIndex.size > 1
 
     Box(Modifier.fillMaxSize()) {

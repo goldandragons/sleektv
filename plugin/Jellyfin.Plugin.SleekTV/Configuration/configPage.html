@@ -9,216 +9,325 @@
     <div data-role="content">
         <div class="content-primary">
             <style>
-                #SleekTVConfigPage h2 { margin-top: 2em; }
-                #SleekTVConfigPage .sleek-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0 1.5em; }
-                #SleekTVConfigPage textarea { font-family: monospace; min-height: 14em; width: 100%; }
-                #SleekTVConfigPage .sleek-help { opacity: .7; font-size: .9em; }
-                #SleekTVConfigPage pre { background: rgba(255,255,255,.06); padding: .8em 1em; border-radius: 6px; overflow-x: auto; }
+                #SleekTVConfigPage .content-primary { max-width: none; }
+                #SleekTVConfigPage .sk-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: 2.5em; align-items: start; }
+                @media (max-width: 1100px) { #SleekTVConfigPage .sk-layout { grid-template-columns: 1fr; } #SleekTVConfigPage .sk-preview-col { order: -1; } }
+                #SleekTVConfigPage .sk-preview-col { position: sticky; top: 5em; }
+                #SleekTVConfigPage section { margin-bottom: 2.2em; }
+                #SleekTVConfigPage h2 { margin: 0 0 .6em; font-size: 1.25em; }
+                #SleekTVConfigPage .sk-help { opacity: .7; font-size: .9em; margin: -.3em 0 1em; }
+                #SleekTVConfigPage .sk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: .2em 1.5em; }
+
+                /* Sliders */
+                #SleekTVConfigPage .sk-slider { margin: .4em 0 1.1em; }
+                #SleekTVConfigPage .sk-slider label { display: flex; justify-content: space-between; font-size: .95em; margin-bottom: .35em; }
+                #SleekTVConfigPage .sk-slider output { font-variant-numeric: tabular-nums; opacity: .85; font-weight: 600; }
+                #SleekTVConfigPage input[type=range] { width: 100%; accent-color: var(--sk-accent, #e50914); height: 1.4em; cursor: pointer; }
+
+                /* Colors */
+                #SleekTVConfigPage .sk-color { display: flex; align-items: center; gap: .7em; margin: .5em 0 1em; }
+                #SleekTVConfigPage .sk-color input[type=color] { width: 2.6em; height: 2.2em; border: none; padding: 0; background: none; cursor: pointer; }
+                #SleekTVConfigPage .sk-color .sk-hex { font-family: monospace; opacity: .7; font-size: .9em; }
+
+                /* Header tabs picker */
+                #SleekTVConfigPage .sk-libs { border: 1px solid rgba(255,255,255,.12); border-radius: 8px; overflow: hidden; margin: .4em 0 .6em; }
+                #SleekTVConfigPage .sk-lib { display: flex; align-items: center; gap: .6em; padding: .45em .8em; border-bottom: 1px solid rgba(255,255,255,.07); }
+                #SleekTVConfigPage .sk-lib:last-child { border-bottom: none; }
+                #SleekTVConfigPage .sk-lib .name { flex: 1; }
+                #SleekTVConfigPage .sk-lib.off .name { opacity: .45; }
+                #SleekTVConfigPage .sk-lib button { background: rgba(255,255,255,.08); color: inherit; border: none; border-radius: 4px; width: 2em; height: 1.8em; cursor: pointer; }
+                #SleekTVConfigPage .sk-lib button:disabled { opacity: .25; cursor: default; }
+
+                #SleekTVConfigPage textarea { font-family: monospace; min-height: 12em; width: 100%; }
+                #SleekTVConfigPage pre { background: rgba(255,255,255,.06); padding: .8em 1em; border-radius: 6px; overflow-x: auto; font-size: .85em; }
+
+                /* ---------- Live preview ---------- */
+                #SleekTVConfigPage .sk-pv-tabs { display: flex; gap: .4em; margin-bottom: .6em; }
+                #SleekTVConfigPage .sk-pv-tabs button { background: rgba(255,255,255,.08); color: inherit; border: none; border-radius: 999px; padding: .35em 1em; cursor: pointer; font-size: .9em; }
+                #SleekTVConfigPage .sk-pv-tabs button.on { background: var(--sk-accent, #e50914); color: #fff; }
+                #SleekTVConfigPage .sk-pv-frame { position: relative; width: 100%; border-radius: 10px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,.5); background: #000; }
+                #SleekTVConfigPage .sk-pv-note { font-size: .8em; opacity: .55; margin-top: .5em; }
+                .pv-stage { position: absolute; top: 0; left: 0; width: 960px; height: 540px; transform-origin: 0 0; overflow: hidden; font-family: Inter, "Segoe UI", system-ui, sans-serif; }
+                .pv-stage * { box-sizing: border-box; }
+                .pv-header { position: absolute; display: flex; align-items: center; z-index: 5; white-space: nowrap; }
+                .pv-brand { font-weight: 800; letter-spacing: -.01em; }
+                .pv-tabs { display: flex; flex: 1; overflow: hidden; }
+                .pv-right { display: flex; align-items: center; gap: 10px; }
+                .pv-pill { border-radius: 999px; font-weight: 500; opacity: .7; }
+                .pv-pill.sel { background: rgba(255,255,255,.14); opacity: 1; font-weight: 600; }
+                .pv-clock { opacity: .7; font-weight: 500; }
+                .pv-hero { position: relative; width: 100%; }
+                .pv-scrim { position: absolute; inset: 0; }
+                .pv-hero-text { position: absolute; left: 48px; bottom: 18px; width: 48%; }
+                .pv-meta { opacity: .7; margin-top: 10px; font-weight: 500; }
+                .pv-prog { height: 4px; width: 60%; background: rgba(255,255,255,.25); margin-top: 8px; border-radius: 2px; overflow: hidden; }
+                .pv-prog i { display: block; height: 100%; }
+                .pv-btns { display: flex; gap: 12px; margin-top: 16px; }
+                .pv-btn { border-radius: 999px; padding: 10px 24px; font-weight: 600; background: rgba(255,255,255,.14); color: #fff; }
+                .pv-row { padding-left: 48px; }
+                .pv-rt { font-weight: 600; margin-bottom: 12px; }
+                .pv-cards { display: flex; align-items: flex-start; }
+                .pv-card { flex: none; }
+                .pv-art { position: relative; overflow: hidden; transform-origin: center; }
+                .pv-badge { position: absolute; top: 8px; right: 8px; width: 22px; height: 22px; border-radius: 50%; color: #fff; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+                .pv-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: rgba(255,255,255,.25); }
+                .pv-bar i { display: block; height: 100%; }
+                .pv-ct { font-weight: 600; margin-top: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+                .pv-cs { opacity: .65; margin-top: 2px; }
+                .pv-chip { display: inline-block; border-radius: 999px; padding: 8px 18px; font-weight: 600; font-size: 14px; margin-right: 8px; background: rgba(255,255,255,.12); }
+                .pv-ep { display: flex; align-items: center; gap: 24px; padding: 8px 48px; }
+                .pv-thumb { flex: none; position: relative; overflow: hidden; }
+                .pv-cast { display: flex; gap: 16px; padding-left: 48px; }
+                .pv-face { width: 80px; height: 80px; border-radius: 50%; }
+                .pv-sub { position: absolute; left: 0; right: 0; text-align: center; font-weight: 500; line-height: 1.25; }
+                .pv-sub span { padding: 2px 10px; }
             </style>
 
             <form id="SleekTVConfigForm">
-                <div class="verticalSection">
-                    <h1>SleekTV</h1>
-                    <p class="sleek-help">These settings control the SleekTV app on your Android TV. The app picks up changes the next time it returns to the home screen.</p>
-                </div>
+                <h1>SleekTV</h1>
+                <p class="sk-help">Changes reach the TV the next time it opens a page or comes back to the screen. Use <b>Account → Reload layout</b> on the TV to update right away.</p>
 
-                <h2>Colors</h2>
-                <div class="sleek-grid">
-                    <div class="inputContainer"><input is="emby-input" type="text" data-cfg="AccentColor" label="Accent color (hex)" /></div>
-                    <div class="inputContainer"><input is="emby-input" type="text" data-cfg="BackgroundColor" label="Background color" /></div>
-                    <div class="inputContainer"><input is="emby-input" type="text" data-cfg="SurfaceColor" label="Card/surface color" /></div>
-                    <div class="inputContainer"><input is="emby-input" type="text" data-cfg="TextColor" label="Text color" /></div>
-                </div>
+                <div class="sk-layout">
+                    <!-- ================= Settings ================= -->
+                    <div>
+                        <section data-preview="home">
+                            <h2>Header</h2>
+                            <div class="sk-grid">
+                                <div class="selectContainer">
+                                    <select is="emby-select" data-cfg="HeaderStyle" label="Style">
+                                        <option value="Floating">Floating pill (SleekFin)</option>
+                                        <option value="Solid">Solid bar</option>
+                                        <option value="Hidden">Hidden</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="sk-slider"><label>Header size <output></output></label><input type="range" data-cfg="HeaderScale" min="0.7" max="1.5" step="0.05" data-unit="×"></div>
+                            <div class="sk-slider"><label>Floating background opacity <output></output></label><input type="range" data-cfg="HeaderOpacity" min="0" max="100" step="5" data-unit="%"></div>
 
-                <h2>Text and headers</h2>
-                <div class="sleek-grid">
-                    <div class="inputContainer"><input is="emby-input" type="number" step="0.05" min="0.5" max="2" data-cfg="FontScale" label="Overall text scale" /></div>
-                    <div class="inputContainer"><input is="emby-input" type="number" min="12" max="96" data-cfg="HeroTitleSize" label="Hero title size" /></div>
-                    <div class="inputContainer"><input is="emby-input" type="number" min="10" max="64" data-cfg="SectionTitleSize" label="Row header size" /></div>
-                    <div class="inputContainer"><input is="emby-input" type="number" min="12" max="96" data-cfg="DetailTitleSize" label="Details page title size" /></div>
-                    <div class="selectContainer">
-                        <select is="emby-select" data-cfg="HeaderStyle" label="Top header">
-                            <option value="Floating">Floating pill (SleekFin)</option>
-                            <option value="Solid">Solid bar</option>
-                            <option value="Hidden">Hidden</option>
-                        </select>
-                    </div>
-                </div>
+                            <h3 style="margin:1.2em 0 .3em">Name</h3>
+                            <p class="sk-help">Two parts, two colors, like <b>Sleek</b><b style="color:var(--sk-accent,#e50914)">TV</b>. Also used on the sign-in screen.</p>
+                            <div class="sk-grid">
+                                <div>
+                                    <div class="inputContainer"><input is="emby-input" type="text" data-cfg="BrandPrimary" label="First part" /></div>
+                                    <div class="sk-color"><input type="color" data-cfg="BrandPrimaryColor"><span>First part color</span><span class="sk-hex"></span></div>
+                                </div>
+                                <div>
+                                    <div class="inputContainer"><input is="emby-input" type="text" data-cfg="BrandSecondary" label="Second part" /></div>
+                                    <div class="sk-color"><input type="color" id="SkBrand2Color"><span>Second part color</span><span class="sk-hex"></span></div>
+                                    <div class="checkboxContainer"><label><input is="emby-checkbox" type="checkbox" id="SkBrand2Accent" /><span>Match the accent color</span></label></div>
+                                    <input type="hidden" data-cfg="BrandSecondaryColor">
+                                </div>
+                            </div>
 
-                <h2>Home screen</h2>
-                <div class="checkboxContainer"><label><input is="emby-checkbox" type="checkbox" data-cfg="ShowHero" /><span>Show hero banner</span></label></div>
-                <div class="sleek-grid">
-                    <div class="selectContainer">
-                        <select is="emby-select" data-cfg="HeroSource" label="Hero banner shows">
-                            <option value="ContinueWatching">Continue Watching (falls back to Latest)</option>
-                            <option value="Latest">Latest added</option>
-                        </select>
-                    </div>
-                    <div class="inputContainer"><input is="emby-input" type="number" min="150" max="900" data-cfg="HeroHeight" label="Hero height" /></div>
-                    <div class="inputContainer"><input is="emby-input" type="number" min="0" max="60" data-cfg="HeroAutoRotateSeconds" label="Hero rotate every (seconds, 0 = off)" /></div>
-                    <div class="inputContainer"><input is="emby-input" type="number" min="5" max="100" data-cfg="LatestItemsPerLibrary" label="Items per 'Latest' row" /></div>
-                </div>
-                <div class="inputContainer">
-                    <input is="emby-input" type="text" data-cfg="HomeRows" label="Home rows, in order" />
-                    <div class="fieldDescription">Comma separated. Options: ContinueWatching, NextUp, Latest, Discover (Seerr), Libraries. Leave one out to hide it.</div>
-                </div>
+                            <h3 style="margin:1.2em 0 .3em">Tabs</h3>
+                            <p class="sk-help">Tick the libraries to show and use the arrows to reorder them. Tabs that don't fit are cut off, so check the preview if you add many or make the header bigger. <span id="SkLibsAuto"></span></p>
+                            <div class="sk-libs" id="SkLibs"><div class="sk-lib"><span class="name">Loading libraries…</span></div></div>
+                            <input type="hidden" data-cfg="HeaderLibraries">
+                            <div class="checkboxContainer"><label><input is="emby-checkbox" type="checkbox" data-cfg="HeaderShowSearch" /><span>Show the Search tab</span></label></div>
+                            <div class="checkboxContainer"><label><input is="emby-checkbox" type="checkbox" data-cfg="HeaderShowClock" /><span>Show the clock</span></label></div>
+                        </section>
 
-                <h2>Cards</h2>
-                <div class="sleek-grid">
-                    <div class="selectContainer">
-                        <select is="emby-select" data-cfg="PosterStyle" label="Poster shape">
-                            <option value="Portrait">Portrait</option>
-                            <option value="Landscape">Landscape</option>
-                        </select>
-                    </div>
-                    <div class="selectContainer">
-                        <select is="emby-select" data-cfg="ContinueWatchingStyle" label="Continue Watching shape">
-                            <option value="Landscape">Landscape</option>
-                            <option value="Portrait">Portrait</option>
-                        </select>
-                    </div>
-                    <div class="inputContainer"><input is="emby-input" type="number" min="80" max="400" data-cfg="PosterWidth" label="Card width" /></div>
-                    <div class="inputContainer"><input is="emby-input" type="number" min="0" max="40" data-cfg="CardCornerRadius" label="Corner radius" /></div>
-                    <div class="inputContainer"><input is="emby-input" type="number" min="0" max="120" data-cfg="RowSpacing" label="Space between rows" /></div>
-                    <div class="inputContainer"><input is="emby-input" type="number" min="0" max="64" data-cfg="CardSpacing" label="Space between cards" /></div>
-                    <div class="inputContainer"><input is="emby-input" type="number" step="0.01" min="1" max="1.4" data-cfg="FocusScale" label="Focused card zoom" /></div>
-                </div>
-                <div class="checkboxContainer"><label><input is="emby-checkbox" type="checkbox" data-cfg="ShowTitlesUnderCards" /><span>Show titles under cards</span></label></div>
-                <div class="checkboxContainer"><label><input is="emby-checkbox" type="checkbox" data-cfg="ShowWatchedBadges" /><span>Show watched checkmarks</span></label></div>
+                        <section data-preview="home">
+                            <h2>Colors</h2>
+                            <div class="sk-grid">
+                                <div class="sk-color"><input type="color" data-cfg="AccentColor"><span>Accent</span><span class="sk-hex"></span></div>
+                                <div class="sk-color"><input type="color" data-cfg="BackgroundColor"><span>Background</span><span class="sk-hex"></span></div>
+                                <div class="sk-color"><input type="color" data-cfg="SurfaceColor"><span>Cards</span><span class="sk-hex"></span></div>
+                                <div class="sk-color"><input type="color" data-cfg="TextColor"><span>Text</span><span class="sk-hex"></span></div>
+                            </div>
+                        </section>
 
-                <h2>Episodes</h2>
-                <div class="sleek-grid">
-                    <div class="selectContainer">
-                        <select is="emby-select" data-cfg="EpisodeLayout" label="Episode layout">
-                            <option value="List">List (thumbnail + description)</option>
-                            <option value="Grid">Grid</option>
-                            <option value="Row">Horizontal row</option>
-                        </select>
-                    </div>
-                    <div class="selectContainer">
-                        <select is="emby-select" data-cfg="SeasonDisplay" label="Seasons">
-                            <option value="Tabs">Tabs (one season at a time)</option>
-                            <option value="Stacked">Stacked (all seasons on one page)</option>
-                        </select>
-                    </div>
-                    <div class="selectContainer">
-                        <select is="emby-select" data-cfg="EpisodeSort" label="Episode order">
-                            <option value="Ascending">Oldest first</option>
-                            <option value="Descending">Newest first</option>
-                        </select>
-                    </div>
-                    <div class="inputContainer"><input is="emby-input" type="number" min="2" max="8" data-cfg="EpisodeGridColumns" label="Grid columns" /></div>
-                    <div class="inputContainer"><input is="emby-input" type="number" min="120" max="600" data-cfg="EpisodeThumbWidth" label="Episode thumbnail width" /></div>
-                </div>
-                <div class="checkboxContainer"><label><input is="emby-checkbox" type="checkbox" data-cfg="ShowEpisodeOverview" /><span>Show episode descriptions</span></label></div>
+                        <section data-preview="home">
+                            <h2>Text</h2>
+                            <div class="sk-slider"><label>Overall text size <output></output></label><input type="range" data-cfg="FontScale" min="0.7" max="1.6" step="0.05" data-unit="×"></div>
+                            <div class="sk-slider"><label>Banner title <output></output></label><input type="range" data-cfg="HeroTitleSize" min="20" max="80" step="1" data-unit=""></div>
+                            <div class="sk-slider"><label>Row titles <output></output></label><input type="range" data-cfg="SectionTitleSize" min="12" max="40" step="1" data-unit=""></div>
+                            <div class="sk-slider" data-preview="details"><label>Details page title <output></output></label><input type="range" data-cfg="DetailTitleSize" min="20" max="80" step="1" data-unit=""></div>
+                        </section>
 
-                <h2>Details page</h2>
-                <div class="checkboxContainer"><label><input is="emby-checkbox" type="checkbox" data-cfg="ShowCast" /><span>Show cast &amp; crew row</span></label></div>
-                <div class="checkboxContainer"><label><input is="emby-checkbox" type="checkbox" data-cfg="ShowSimilar" /><span>Show "You may like" row</span></label></div>
+                        <section data-preview="home">
+                            <h2>Home screen</h2>
+                            <div class="checkboxContainer"><label><input is="emby-checkbox" type="checkbox" data-cfg="ShowHero" /><span>Show the banner</span></label></div>
+                            <div class="sk-grid">
+                                <div class="selectContainer">
+                                    <select is="emby-select" data-cfg="HeroSource" label="Banner shows">
+                                        <option value="ContinueWatching">Continue Watching (falls back to Latest)</option>
+                                        <option value="Latest">Latest added</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="sk-slider"><label>Banner height <output></output></label><input type="range" data-cfg="HeroHeight" min="200" max="700" step="10" data-unit=""></div>
+                            <div class="sk-slider"><label>Change banner every <output></output></label><input type="range" data-cfg="HeroAutoRotateSeconds" min="0" max="30" step="1" data-unit=" s" data-zero="never"></div>
+                            <div class="sk-slider"><label>Items per "Latest" row <output></output></label><input type="range" data-cfg="LatestItemsPerLibrary" min="5" max="60" step="1" data-unit=""></div>
+                            <div class="inputContainer">
+                                <input is="emby-input" type="text" data-cfg="HomeRows" label="Rows, in order" />
+                                <div class="fieldDescription">Comma separated: ContinueWatching, NextUp, Latest, Discover (Seerr), Libraries. Leave one out to hide it.</div>
+                            </div>
+                        </section>
 
-                <h2>Player</h2>
-                <p class="sleek-help">Intro and credits timestamps come from the Intro Skipper plugin.</p>
-                <div class="sleek-grid">
-                    <div class="selectContainer">
-                        <select is="emby-select" data-cfg="SkipIntroMode" label="Intros, recaps and previews">
-                            <option value="Button">Show a Skip button</option>
-                            <option value="Auto">Skip automatically</option>
-                            <option value="Off">Do nothing</option>
-                        </select>
-                    </div>
-                    <div class="selectContainer">
-                        <select is="emby-select" data-cfg="SkipCreditsMode" label="Credits">
-                            <option value="Button">Show a Skip button</option>
-                            <option value="Auto">Skip automatically</option>
-                            <option value="Off">Do nothing</option>
-                        </select>
-                    </div>
-                    <div class="inputContainer"><input is="emby-input" type="number" min="0" max="600" data-cfg="SkipButtonSeconds" label="Button shows for (seconds, 0 = whole intro)" /></div>
-                </div>
+                        <section data-preview="home">
+                            <h2>Cards</h2>
+                            <div class="sk-grid">
+                                <div class="selectContainer">
+                                    <select is="emby-select" data-cfg="PosterStyle" label="Poster shape">
+                                        <option value="Portrait">Portrait</option>
+                                        <option value="Landscape">Landscape</option>
+                                    </select>
+                                </div>
+                                <div class="selectContainer">
+                                    <select is="emby-select" data-cfg="ContinueWatchingStyle" label="Continue Watching shape">
+                                        <option value="Landscape">Landscape</option>
+                                        <option value="Portrait">Portrait</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="sk-slider"><label>Card width <output></output></label><input type="range" data-cfg="PosterWidth" min="90" max="260" step="2" data-unit=""></div>
+                            <div class="sk-slider"><label>Corner rounding <output></output></label><input type="range" data-cfg="CardCornerRadius" min="0" max="32" step="1" data-unit=""></div>
+                            <div class="sk-slider"><label>Space between rows <output></output></label><input type="range" data-cfg="RowSpacing" min="0" max="80" step="2" data-unit=""></div>
+                            <div class="sk-slider"><label>Space between cards <output></output></label><input type="range" data-cfg="CardSpacing" min="0" max="48" step="1" data-unit=""></div>
+                            <div class="sk-slider"><label>Zoom on the selected card <output></output></label><input type="range" data-cfg="FocusScale" min="1" max="1.3" step="0.01" data-unit="×"></div>
+                            <div class="checkboxContainer"><label><input is="emby-checkbox" type="checkbox" data-cfg="ShowTitlesUnderCards" /><span>Titles under cards</span></label></div>
+                            <div class="checkboxContainer"><label><input is="emby-checkbox" type="checkbox" data-cfg="ShowWatchedBadges" /><span>Watched checkmarks</span></label></div>
+                        </section>
 
-                <h2>Subtitles</h2>
-                <p class="sleek-help">Pick a track during playback with the CC button. These settings decide what starts on and how subtitles look.</p>
-                <div class="sleek-grid">
-                    <div class="selectContainer">
-                        <select is="emby-select" data-cfg="SubtitleMode" label="Turn subtitles on">
-                            <option value="Jellyfin">Follow each user's Jellyfin settings</option>
-                            <option value="Default">When the file marks a track as default</option>
-                            <option value="Always">Always</option>
-                            <option value="ForcedOnly">Forced (foreign-language parts) only</option>
-                            <option value="Off">Off</option>
-                        </select>
-                    </div>
-                    <div class="inputContainer">
-                        <input is="emby-input" type="text" data-cfg="SubtitleLanguage" label="Preferred language" placeholder="eng" />
-                        <div class="fieldDescription">3-letter code (eng, spa, fra…). Ignored when following Jellyfin settings.</div>
-                    </div>
-                    <div class="inputContainer"><input is="emby-input" type="number" min="40" max="300" data-cfg="SubtitleSize" label="Size (% of normal)" /></div>
-                    <div class="inputContainer"><input is="emby-input" type="text" data-cfg="SubtitleColor" label="Text color (hex)" /></div>
-                    <div class="selectContainer">
-                        <select is="emby-select" data-cfg="SubtitleBackground" label="Style">
-                            <option value="Outline">Outline</option>
-                            <option value="Shadow">Drop shadow</option>
-                            <option value="Box">Dark box</option>
-                            <option value="None">Plain</option>
-                        </select>
-                    </div>
-                    <div class="inputContainer"><input is="emby-input" type="number" min="0" max="45" data-cfg="SubtitlePosition" label="Height from bottom (% of screen)" /></div>
-                </div>
+                        <section data-preview="details">
+                            <h2>Episodes</h2>
+                            <div class="sk-grid">
+                                <div class="selectContainer">
+                                    <select is="emby-select" data-cfg="EpisodeLayout" label="Layout">
+                                        <option value="List">List (picture + description)</option>
+                                        <option value="Grid">Grid</option>
+                                        <option value="Row">Horizontal row</option>
+                                    </select>
+                                </div>
+                                <div class="selectContainer">
+                                    <select is="emby-select" data-cfg="SeasonDisplay" label="Seasons">
+                                        <option value="Tabs">Tabs (one season at a time)</option>
+                                        <option value="Stacked">Stacked (all on one page)</option>
+                                    </select>
+                                </div>
+                                <div class="selectContainer">
+                                    <select is="emby-select" data-cfg="EpisodeSort" label="Order">
+                                        <option value="Ascending">Oldest first</option>
+                                        <option value="Descending">Newest first</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="sk-slider"><label>Grid columns <output></output></label><input type="range" data-cfg="EpisodeGridColumns" min="2" max="8" step="1" data-unit=""></div>
+                            <div class="sk-slider"><label>Episode picture width <output></output></label><input type="range" data-cfg="EpisodeThumbWidth" min="160" max="480" step="4" data-unit=""></div>
+                            <div class="checkboxContainer"><label><input is="emby-checkbox" type="checkbox" data-cfg="ShowEpisodeOverview" /><span>Episode descriptions</span></label></div>
+                            <div class="checkboxContainer"><label><input is="emby-checkbox" type="checkbox" data-cfg="ShowCast" /><span>Cast &amp; crew row</span></label></div>
+                            <div class="checkboxContainer"><label><input is="emby-checkbox" type="checkbox" data-cfg="ShowSimilar" /><span>"You may like" row</span></label></div>
+                        </section>
 
-                <h2>Seerr</h2>
-                <p class="sleek-help">Connect Jellyseerr / Overseerr so the app can show a Request tab in Search and recommend titles to add on the home screen. The API key stays on this server; requests are made as each Jellyfin user, so their Seerr permissions apply.</p>
-                <div class="sleek-grid">
-                    <div class="inputContainer">
-                        <input is="emby-input" type="text" data-cfg="SeerrUrl" label="Seerr address" placeholder="http://192.168.1.50:5055" />
-                        <div class="fieldDescription">As this Jellyfin server reaches it.</div>
+                        <section data-preview="player">
+                            <h2>Player</h2>
+                            <p class="sk-help">Intro and credits times come from the Intro Skipper plugin.</p>
+                            <div class="sk-grid">
+                                <div class="selectContainer">
+                                    <select is="emby-select" data-cfg="SkipIntroMode" label="Intros, recaps, previews">
+                                        <option value="Button">Show a Skip button</option>
+                                        <option value="Auto">Skip automatically</option>
+                                        <option value="Off">Do nothing</option>
+                                    </select>
+                                </div>
+                                <div class="selectContainer">
+                                    <select is="emby-select" data-cfg="SkipCreditsMode" label="Credits">
+                                        <option value="Button">Show a Skip button</option>
+                                        <option value="Auto">Skip automatically</option>
+                                        <option value="Off">Do nothing</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="sk-slider"><label>Skip button stays for <output></output></label><input type="range" data-cfg="SkipButtonSeconds" min="0" max="60" step="1" data-unit=" s" data-zero="whole intro"></div>
+                        </section>
+
+                        <section data-preview="player">
+                            <h2>Subtitles</h2>
+                            <p class="sk-help">Pick a track during playback with the CC button. These decide what starts on and how they look.</p>
+                            <div class="sk-grid">
+                                <div class="selectContainer">
+                                    <select is="emby-select" data-cfg="SubtitleMode" label="Turn subtitles on">
+                                        <option value="Jellyfin">Follow each user's Jellyfin settings</option>
+                                        <option value="Default">When the file marks one as default</option>
+                                        <option value="Always">Always</option>
+                                        <option value="ForcedOnly">Forced (foreign parts) only</option>
+                                        <option value="Off">Off</option>
+                                    </select>
+                                </div>
+                                <div class="inputContainer">
+                                    <input is="emby-input" type="text" data-cfg="SubtitleLanguage" label="Preferred language" placeholder="eng" />
+                                    <div class="fieldDescription">3-letter code (eng, spa, fra…). Ignored when following Jellyfin settings.</div>
+                                </div>
+                                <div class="selectContainer">
+                                    <select is="emby-select" data-cfg="SubtitleBackground" label="Style">
+                                        <option value="Outline">Outline</option>
+                                        <option value="Shadow">Drop shadow</option>
+                                        <option value="Box">Dark box</option>
+                                        <option value="None">Plain</option>
+                                    </select>
+                                </div>
+                                <div class="sk-color"><input type="color" data-cfg="SubtitleColor"><span>Text color</span><span class="sk-hex"></span></div>
+                            </div>
+                            <div class="sk-slider"><label>Size <output></output></label><input type="range" data-cfg="SubtitleSize" min="50" max="250" step="5" data-unit="%"></div>
+                            <div class="sk-slider"><label>Height from the bottom <output></output></label><input type="range" data-cfg="SubtitlePosition" min="0" max="40" step="1" data-unit="%"></div>
+                        </section>
+
+                        <section data-preview="home">
+                            <h2>Seerr</h2>
+                            <p class="sk-help">Adds a Request tab in Search and "to add" rows on Home. The key stays on this server; requests are made as each Jellyfin user.</p>
+                            <div class="sk-grid">
+                                <div class="inputContainer">
+                                    <input is="emby-input" type="text" data-cfg="SeerrUrl" label="Seerr address" placeholder="https://seerr.example.com" />
+                                </div>
+                                <div class="inputContainer">
+                                    <input is="emby-input" type="password" data-cfg="SeerrApiKey" label="API key" autocomplete="off" />
+                                    <div class="fieldDescription">Seerr → Settings → General → API Key.</div>
+                                </div>
+                            </div>
+                            <div class="checkboxContainer"><label><input is="emby-checkbox" type="checkbox" data-cfg="ShowSeerrOnHome" /><span>Recommend titles to add on Home</span></label></div>
+                            <div style="display:flex; gap:1em; align-items:center;">
+                                <button is="emby-button" type="button" id="SleekSeerrTest" class="raised emby-button"><span>Save &amp; test connection</span></button>
+                                <span id="SleekSeerrStatus" class="sk-help" style="margin:0"></span>
+                            </div>
+                        </section>
+
+                        <section>
+                            <h2>Custom styles</h2>
+                            <p class="sk-help">Overrides everything above. Paste a Jellyfin web theme's <code>@import url("…");</code> to borrow its colors and shapes, or write rules like the ones below. Not shown in the preview.</p>
+                            <div class="inputContainer">
+                                <textarea is="emby-textarea" data-cfg="CustomStyles" spellcheck="false"></textarea>
+                            </div>
+                            <details>
+                                <summary>Supported rules</summary>
+<pre>:root     { accent; background; surface; text; font-scale }
+header    { style: floating|solid|hidden; scale: 1.2; opacity: 60%; search: show|hide; clock: show|hide }
+brand     { primary: "Sleek"; primary-color: #fff; secondary: "TV"; secondary-color: #e50914 }
+hero      { display: none|block; height; title-size; rotate; source: continue|latest }
+section   { title-size; spacing }
+card      { width; radius; spacing; focus-scale; shape: portrait|landscape; titles: show|hide; badges: show|hide }
+continue  { shape: portrait|landscape }
+details   { title-size; cast: show|hide; similar: show|hide }
+home      { rows: ContinueWatching, NextUp, Latest, Discover, Libraries; latest-count }
+episodes  { layout: list|grid|row; columns; thumb-width; seasons: tabs|stacked; order: asc|desc; overview: show|hide }
+player    { skip-intro: button|auto|off; skip-credits: button|auto|off; button-seconds }
+subtitles { mode: jellyfin|default|always|forced|off; language: eng; size: 120%; color; background: outline|shadow|box|none; position: 10% }</pre>
+                            </details>
+                        </section>
+
+                        <button is="emby-button" type="submit" class="raised button-submit block emby-button"><span>Save</span></button>
                     </div>
-                    <div class="inputContainer">
-                        <input is="emby-input" type="password" data-cfg="SeerrApiKey" label="Seerr API key" autocomplete="off" />
-                        <div class="fieldDescription">Seerr → Settings → General → API Key.</div>
+
+                    <!-- ================= Live preview ================= -->
+                    <div class="sk-preview-col">
+                        <div class="sk-pv-tabs">
+                            <button type="button" data-pv="home" class="on">Home</button>
+                            <button type="button" data-pv="details">Details</button>
+                            <button type="button" data-pv="player">Player</button>
+                        </div>
+                        <div class="sk-pv-frame" id="SkPreviewFrame"><div class="pv-stage" id="SkPreview"></div></div>
+                        <div class="sk-pv-note">Live preview of the TV screen. Pictures are placeholders; it updates as you change settings.</div>
                     </div>
-                </div>
-                <div class="checkboxContainer"><label><input is="emby-checkbox" type="checkbox" data-cfg="ShowSeerrOnHome" /><span>Show "Discover" recommendations on the home screen</span></label></div>
-                <div style="display:flex; gap:1em; align-items:center;">
-                    <button is="emby-button" type="button" id="SleekSeerrTest" class="raised emby-button"><span>Test connection</span></button>
-                    <span id="SleekSeerrStatus" class="sleek-help">Save first, then test.</span>
-                </div>
-
-                <h2>Custom styles</h2>
-                <p class="sleek-help">CSS-style overrides. Anything here is applied after the settings above, so it wins. Unknown properties are ignored.</p>
-                <p class="sleek-help">Jellyfin web themes work too: paste a theme's <code>@import url("…");</code> line (or its CSS). The TV downloads it and carries over the parts a native app can use: accent, background, card and text colors, card corner radius, focus zoom, and title sizes. Fonts, blur and web-page layout rules are ignored. Rules you write below an import override it.</p>
-                <div class="inputContainer">
-                    <textarea is="emby-textarea" data-cfg="CustomStyles" spellcheck="false"></textarea>
-                </div>
-                <details>
-                    <summary>Supported selectors and properties</summary>
-<pre>:root    { accent; background; surface; text; font-scale }
-header   { style: floating|solid|hidden }
-hero    { display: none|block; height; title-size; rotate; source: continue|latest }
-section  { title-size; spacing }          /* row headers and gaps */
-card     { width; radius; spacing; focus-scale; shape: portrait|landscape;
-           titles: show|hide; badges: show|hide }
-continue { shape: portrait|landscape }
-details  { title-size; cast: show|hide; similar: show|hide }
-home     { rows: ContinueWatching, NextUp, Latest, Libraries; latest-count }
-episodes { layout: list|grid|row; columns; thumb-width;
-           seasons: tabs|stacked; order: asc|desc; overview: show|hide }
-player   { skip-intro: button|auto|off; skip-credits: button|auto|off;
-           button-seconds }
-subtitles { mode: jellyfin|default|always|forced|off; language: eng;
-            size: 120%; color: #ffff00; background: outline|shadow|box|none;
-            position: 10% }
-
-Example:
-:root    { accent: #1db954; background: #0b0b0b; }
-hero     { height: 460; title-size: 52; }
-card     { radius: 16; width: 170; focus-scale: 1.12; }
-episodes { layout: grid; columns: 5; overview: hide; }</pre>
-                </details>
-
-                <div style="margin-top: 2em;">
-                    <button is="emby-button" type="submit" class="raised button-submit block emby-button">
-                        <span>Save</span>
-                    </button>
                 </div>
             </form>
         </div>
@@ -228,59 +337,352 @@ episodes { layout: grid; columns: 5; overview: hide; }</pre>
         (function () {
             var pluginId = 'fec99f9b-3607-4532-8f5e-2acf55ce8388';
             var page = document.querySelector('#SleekTVConfigPage');
-            var form = document.querySelector('#SleekTVConfigForm');
+            var form = page.querySelector('#SleekTVConfigForm');
+            var previewPage = 'home';
+            var libraries = []; // [{id, name}]
+            var libOrder = []; // ids in display order
+            var libChecked = {}; // id -> bool
+            var libAuto = true; // nothing chosen yet: app shows the first 7
 
-            function fields() {
-                return form.querySelectorAll('[data-cfg]');
+            function $(sel) { return page.querySelector(sel); }
+            function all(sel) { return Array.prototype.slice.call(page.querySelectorAll(sel)); }
+            function fields() { return all('[data-cfg]'); }
+            function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+            function hex6(c, fallback) {
+                c = (c || '').trim();
+                if (/^#[0-9a-f]{3}$/i.test(c)) c = '#' + c[1] + c[1] + c[2] + c[2] + c[3] + c[3];
+                if (/^#[0-9a-f]{8}$/i.test(c)) c = '#' + c.slice(3); // #AARRGGBB -> #RRGGBB
+                return /^#[0-9a-f]{6}$/i.test(c) ? c.toLowerCase() : fallback;
+            }
+            function normId(id) { return String(id || '').replace(/-/g, '').toLowerCase(); }
+
+            // ---------- Slider labels ----------
+            function sliderText(el) {
+                var v = parseFloat(el.value);
+                if (v === 0 && el.dataset.zero) return el.dataset.zero;
+                var unit = el.dataset.unit || '';
+                var digits = (el.step || '').indexOf('.') >= 0 ? 2 : 0;
+                return (digits ? v.toFixed(digits).replace(/0$/, '') : v) + unit;
+            }
+            function updateSliderLabels() {
+                all('input[type=range]').forEach(function (el) {
+                    var out = el.parentNode.querySelector('output');
+                    if (out) out.textContent = sliderText(el);
+                });
+                all('.sk-color').forEach(function (box) {
+                    var input = box.querySelector('input[type=color]');
+                    var hex = box.querySelector('.sk-hex');
+                    if (input && hex) hex.textContent = input.value.toUpperCase();
+                });
             }
 
+            // ---------- Header tab picker ----------
+            function renderLibs() {
+                var box = $('#SkLibs');
+                if (!libraries.length) { box.innerHTML = '<div class="sk-lib"><span class="name">No libraries found</span></div>'; return; }
+                box.innerHTML = libOrder.map(function (id, i) {
+                    var lib = libraries.filter(function (l) { return l.id === id; })[0];
+                    var on = !!libChecked[id];
+                    return '<div class="sk-lib' + (on ? '' : ' off') + '" data-id="' + id + '">' +
+                        '<label style="display:flex;align-items:center;gap:.6em;flex:1;cursor:pointer"><input type="checkbox" class="sk-lib-on"' + (on ? ' checked' : '') + '><span class="name">' + esc(lib ? lib.name : id) + '</span></label>' +
+                        '<button type="button" class="sk-up" title="Move up"' + (i === 0 ? ' disabled' : '') + '>▲</button>' +
+                        '<button type="button" class="sk-down" title="Move down"' + (i === libOrder.length - 1 ? ' disabled' : '') + '>▼</button></div>';
+                }).join('');
+                $('#SkLibsAuto').textContent = libAuto ? 'Nothing picked yet, so the first 7 show automatically.' : '';
+                syncLibField();
+            }
+            function syncLibField() {
+                $('[data-cfg=HeaderLibraries]').value = libAuto ? '' : libOrder.filter(function (id) { return libChecked[id]; }).join(',');
+            }
+            function shownLibNames() {
+                var ids = libAuto ? libOrder.slice(0, 7) : libOrder.filter(function (id) { return libChecked[id]; });
+                return ids.map(function (id) { var l = libraries.filter(function (x) { return x.id === id; })[0]; return l ? l.name : ''; }).filter(Boolean);
+            }
+            $('#SkLibs').addEventListener('click', function (e) {
+                var row = e.target.closest('.sk-lib'); if (!row || !row.dataset.id) return;
+                var id = row.dataset.id, i = libOrder.indexOf(id);
+                if (e.target.classList.contains('sk-up') && i > 0) { libOrder.splice(i, 1); libOrder.splice(i - 1, 0, id); }
+                else if (e.target.classList.contains('sk-down') && i < libOrder.length - 1) { libOrder.splice(i, 1); libOrder.splice(i + 1, 0, id); }
+                else if (e.target.classList.contains('sk-lib-on')) { libChecked[id] = e.target.checked; }
+                else return;
+                libAuto = false;
+                renderLibs(); render();
+            });
+            function loadLibraries(saved) {
+                return ApiClient.getVirtualFolders().then(function (folders) {
+                    libraries = (folders || []).map(function (f) { return { id: normId(f.ItemId), name: f.Name }; });
+                    var chosen = (saved || '').split(',').map(normId).filter(Boolean);
+                    libAuto = chosen.length === 0;
+                    libChecked = {};
+                    if (libAuto) {
+                        libOrder = libraries.map(function (l) { return l.id; });
+                        libOrder.forEach(function (id, i) { libChecked[id] = i < 7; });
+                    } else {
+                        libOrder = chosen.filter(function (id) { return libraries.some(function (l) { return l.id === id; }); });
+                        libOrder.forEach(function (id) { libChecked[id] = true; });
+                        libraries.forEach(function (l) { if (libOrder.indexOf(l.id) < 0) { libOrder.push(l.id); libChecked[l.id] = false; } });
+                    }
+                    renderLibs(); render();
+                }, function () { libraries = []; renderLibs(); });
+            }
+
+            // ---------- Second brand color (or "match accent") ----------
+            function syncBrand2() {
+                var follow = $('#SkBrand2Accent').checked;
+                $('#SkBrand2Color').disabled = follow;
+                if (follow) $('#SkBrand2Color').value = $('[data-cfg=AccentColor]').value;
+                $('[data-cfg=BrandSecondaryColor]').value = follow ? '' : $('#SkBrand2Color').value;
+            }
+
+            // ---------- Read the form ----------
+            function values() {
+                var v = {};
+                fields().forEach(function (el) {
+                    var k = el.getAttribute('data-cfg');
+                    if (el.type === 'checkbox') v[k] = el.checked;
+                    else if (el.type === 'range') v[k] = parseFloat(el.value);
+                    else v[k] = el.value;
+                });
+                v.accent = v.AccentColor || '#e50914';
+                v.brand2 = v.BrandSecondaryColor || v.accent;
+                return v;
+            }
+
+            // ---------- Live preview ----------
+            var GRADS = [
+                'linear-gradient(135deg,#1d2b64,#f8cdda)', 'linear-gradient(135deg,#0f2027,#2c5364)', 'linear-gradient(135deg,#42275a,#734b6d)',
+                'linear-gradient(135deg,#134e5e,#71b280)', 'linear-gradient(135deg,#614385,#516395)', 'linear-gradient(135deg,#c94b4b,#4b134f)',
+                'linear-gradient(135deg,#373b44,#4286f4)', 'linear-gradient(135deg,#ee9ca7,#ffdde1)', 'linear-gradient(135deg,#3a1c71,#d76d77,#ffaf7b)'
+            ];
+            function grad(i) { return GRADS[i % GRADS.length]; }
+            function px(n) { return Math.round(n * 10) / 10 + 'px'; }
+            function headerSpace(v) { return v.HeaderStyle === 'Hidden' ? 32 : 48 + 52 * v.HeaderScale; }
+
+            function headerHtml(v) {
+                if (v.HeaderStyle === 'Hidden') return '';
+                var s = v.HeaderScale, fs = v.FontScale;
+                function pill(t, sel) {
+                    return '<span class="pv-pill' + (sel ? ' sel' : '') + '" style="font-size:' + px(14 * s * fs) + ';padding:' + px(7 * s) + ' ' + px(16 * s) + '">' + esc(t) + '</span>';
+                }
+                var tabs = pill('Home', true) + shownLibNames().map(function (n) { return pill(n); }).join('');
+                var right = (v.HeaderShowSearch ? pill('Search') : '') +
+                    (v.HeaderShowClock ? '<span class="pv-clock" style="font-size:' + px(14 * s * fs) + '">8:24 PM</span>' : '') + pill('Account');
+                var box = v.HeaderStyle === 'Solid'
+                    ? 'top:0;left:0;right:0;background:' + v.BackgroundColor + ';padding:' + px(14 * s) + ' 48px'
+                    : 'top:18px;left:40px;right:40px;border-radius:999px;background:rgba(0,0,0,' + (v.HeaderOpacity / 100) + ');padding:' + px(8 * s) + ' ' + px(20 * s);
+                return '<div class="pv-header" style="' + box + '">' +
+                    '<span class="pv-brand" style="font-size:' + px(20 * s * fs) + '"><span style="color:' + v.BrandPrimaryColor + '">' + esc(v.BrandPrimary) + '</span><span style="color:' + v.brand2 + '">' + esc(v.BrandSecondary) + '</span></span>' +
+                    '<div class="pv-tabs" style="gap:' + px(4 * s) + ';margin-left:' + px(28 * s) + '">' + tabs + '</div>' +
+                    '<div class="pv-right">' + right + '</div></div>';
+            }
+
+            function scrim(v) {
+                return '<div class="pv-scrim" style="background:linear-gradient(90deg,' + v.BackgroundColor + 'eb 0%,' + v.BackgroundColor + '80 45%,transparent 80%)"></div>' +
+                    '<div class="pv-scrim" style="background:linear-gradient(180deg,transparent 60%,' + v.BackgroundColor + ' 100%)"></div>';
+            }
+
+            function cardsRow(v, title, landscape, count, opts) {
+                opts = opts || {};
+                var fs = v.FontScale;
+                var w = landscape ? v.PosterWidth * 1.85 : v.PosterWidth;
+                var h = landscape ? w * 9 / 16 : w * 1.5;
+                var cards = '';
+                for (var i = 0; i < count; i++) {
+                    var focused = opts.focus && i === 0;
+                    var art = 'height:' + px(h) + ';border-radius:' + px(v.CardCornerRadius) + ';background:' + grad(i + (opts.offset || 1)) +
+                        (focused ? ';transform:scale(' + v.FocusScale + ');box-shadow:0 0 0 2px ' + v.TextColor + ';z-index:2' : '');
+                    cards += '<div class="pv-card" style="width:' + px(w) + ';margin-right:' + px(v.CardSpacing) + '">' +
+                        '<div class="pv-art" style="' + art + '">' +
+                        (v.ShowWatchedBadges && i === 2 ? '<span class="pv-badge" style="background:' + v.accent + '">✓</span>' : '') +
+                        (opts.progress && i < 3 ? '<div class="pv-bar"><i style="width:' + (25 + i * 22) + '%;background:' + v.accent + '"></i></div>' : '') +
+                        '</div>' +
+                        (v.ShowTitlesUnderCards ? '<div class="pv-ct" style="font-size:' + px(14 * fs) + '">' + esc((opts.names || [])[i] || ('Title ' + (i + 1))) + '</div><div class="pv-cs" style="font-size:' + px(12 * fs) + '">' + (opts.sub || '2024') + '</div>' : '') +
+                        '</div>';
+                }
+                return '<div class="pv-row" style="margin-top:' + px(v.RowSpacing) + '"><div class="pv-rt" style="font-size:' + px(v.SectionTitleSize * fs) + '">' + esc(title) + '</div><div class="pv-cards">' + cards + '</div></div>';
+            }
+
+            function homeHtml(v) {
+                var fs = v.FontScale, html = '';
+                var cw = v.HeroSource !== 'Latest';
+                html += '<div style="padding-top:' + px(v.ShowHero ? 0 : headerSpace(v)) + '">';
+                if (v.ShowHero) {
+                    html += '<div class="pv-hero" style="height:' + px(v.HeroHeight) + ';background:' + grad(8) + '">' + scrim(v) +
+                        '<div class="pv-hero-text"><div style="font-size:' + px(v.HeroTitleSize * fs) + ';font-weight:800;line-height:1.05">' + (cw ? 'The Long Night' : 'New Arrival') + '</div>' +
+                        '<div class="pv-meta" style="font-size:' + px(14 * fs) + '">' + (cw ? 'S2:E5 · Into the Storm · 42m' : '2026 · PG-13 · 1h 52m · ★ 7.8') + '</div>' +
+                        (cw ? '<div class="pv-prog"><i style="width:45%;background:' + v.accent + '"></i></div>' : '') +
+                        '<div class="pv-btns"><span class="pv-btn" style="background:' + v.accent + ';font-size:' + px(15 * fs) + '">▶ ' + (cw ? 'Resume' : 'Play') + '</span><span class="pv-btn" style="font-size:' + px(15 * fs) + '">More info</span></div></div></div>';
+                }
+                html += cardsRow(v, 'Continue Watching', v.ContinueWatchingStyle !== 'Portrait', 6, { focus: !v.ShowHero, progress: true, offset: 3, sub: 'S1:E4' });
+                html += cardsRow(v, 'Latest in Movies', v.PosterStyle === 'Landscape', 9, { focus: false, offset: 1 });
+                html += '</div>';
+                return html + headerHtml(v);
+            }
+
+            function detailsHtml(v) {
+                var fs = v.FontScale, html = '';
+                html += '<div style="position:absolute;inset:0;background:' + grad(6) + ';filter:blur(1px)"></div>' + scrim(v) +
+                    '<div style="position:absolute;inset:0;background:' + v.BackgroundColor + ';opacity:.35"></div>';
+                html += '<div style="position:relative;padding:40px 48px 0;width:62%">' +
+                    '<div style="font-size:' + px(v.DetailTitleSize * fs) + ';font-weight:800;line-height:1.05">The Long Night</div>' +
+                    '<div class="pv-meta" style="font-size:' + px(15 * fs) + '">2024 · TV-MA · 3 seasons · ★ 8.4</div>' +
+                    '<div style="opacity:.7;margin-top:10px;font-size:' + px(15 * fs) + ';line-height:1.45">A small town is cut off by an endless storm, and the people left behind start to notice the lights in the hills.</div>' +
+                    '<div class="pv-btns"><span class="pv-btn" style="background:' + v.accent + ';font-size:' + px(15 * fs) + '">▶ Resume S2:E5</span></div></div>';
+                // Seasons
+                var stacked = v.SeasonDisplay === 'Stacked';
+                html += '<div style="position:relative;margin-top:22px">';
+                if (!stacked) html += '<div style="padding:0 48px 8px"><span class="pv-chip" style="background:' + v.accent + '">Season 1</span><span class="pv-chip">Season 2</span><span class="pv-chip">Season 3</span></div>';
+                else html += '<div class="pv-rt" style="padding-left:48px;font-size:' + px(v.SectionTitleSize * fs) + '">Season 1</div>';
+                var nums = [1, 2, 3, 4, 5, 6, 7, 8];
+                if (v.EpisodeSort === 'Descending') nums.reverse();
+                var names = ['Pilot', 'The Signal', 'Lights in the Hills', 'Undertow', 'Into the Storm', 'Low Tide', 'Fog Line', 'Daybreak'];
+                function thumb(i, w) {
+                    return '<div class="pv-thumb" style="width:' + px(w) + ';height:' + px(w * 9 / 16) + ';border-radius:' + px(v.CardCornerRadius) + ';background:' + grad(i) +
+                        (i === nums[0] ? ';transform:scale(' + Math.min(v.FocusScale, 1.04) + ');box-shadow:0 0 0 2px ' + v.TextColor : '') + '">' +
+                        (i <= 2 && v.ShowWatchedBadges ? '<span class="pv-badge" style="background:' + v.accent + '">✓</span>' : '') + '</div>';
+                }
+                function epTitle(n) { return n + '. ' + names[n - 1]; }
+                if (v.EpisodeLayout === 'Grid') {
+                    var cols = v.EpisodeGridColumns, gap = v.CardSpacing, w = (864 - gap * (cols - 1)) / cols;
+                    html += '<div style="display:flex;flex-wrap:wrap;gap:' + px(gap) + ';padding:8px 48px">' + nums.slice(0, cols * 2).map(function (n) {
+                        return '<div style="width:' + px(w) + '">' + thumb(n, w) + '<div class="pv-ct" style="font-size:' + px(14 * fs) + '">' + epTitle(n) + '</div>' +
+                            (v.ShowEpisodeOverview ? '<div class="pv-cs" style="font-size:' + px(12 * fs) + '">The storm reaches the coast.</div>' : '') + '</div>';
+                    }).join('') + '</div>';
+                } else if (v.EpisodeLayout === 'Row') {
+                    html += '<div style="display:flex;gap:' + px(v.CardSpacing) + ';padding:8px 48px">' + nums.map(function (n) {
+                        return '<div style="flex:none;width:' + px(v.EpisodeThumbWidth) + '">' + thumb(n, v.EpisodeThumbWidth) + '<div class="pv-ct" style="font-size:' + px(14 * fs) + '">' + epTitle(n) + '</div>' +
+                            (v.ShowEpisodeOverview ? '<div class="pv-cs" style="font-size:' + px(12 * fs) + '">The storm reaches the coast.</div>' : '') + '</div>';
+                    }).join('') + '</div>';
+                } else {
+                    html += nums.slice(0, 4).map(function (n) {
+                        return '<div class="pv-ep">' + thumb(n, v.EpisodeThumbWidth) + '<div><div style="font-size:' + px(18 * fs) + ';font-weight:600">' + epTitle(n) + '</div>' +
+                            '<div class="pv-cs" style="font-size:' + px(13 * fs) + '">42m</div>' +
+                            (v.ShowEpisodeOverview ? '<div style="opacity:.7;margin-top:6px;font-size:' + px(14 * fs) + '">Supplies run low as the roads flood and an old radio crackles back to life.</div>' : '') + '</div></div>';
+                    }).join('');
+                }
+                if (v.ShowCast) {
+                    html += '<div class="pv-rt" style="padding-left:48px;margin-top:' + px(v.RowSpacing) + ';font-size:' + px(v.SectionTitleSize * fs) + '">Cast &amp; Crew</div><div class="pv-cast">' +
+                        [0, 1, 2, 3, 4, 5, 6].map(function (i) { return '<div class="pv-face" style="background:' + grad(i + 2) + '"></div>'; }).join('') + '</div>';
+                }
+                html += '</div>';
+                return html;
+            }
+
+            function playerHtml(v) {
+                var size = 540 * 0.0533 * v.SubtitleSize / 100;
+                var style = '';
+                if (v.SubtitleBackground === 'Outline') style = 'text-shadow:-2px -2px 0 #000,2px -2px 0 #000,-2px 2px 0 #000,2px 2px 0 #000,0 2px 0 #000,0 -2px 0 #000';
+                else if (v.SubtitleBackground === 'Shadow') style = 'text-shadow:3px 3px 4px rgba(0,0,0,.95)';
+                else if (v.SubtitleBackground === 'Box') style = 'background:rgba(0,0,0,.75)';
+                var off = v.SubtitleMode === 'Off';
+                var html = '<div style="position:absolute;inset:0;background:' + grad(1) + '"></div>' +
+                    '<div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.1),rgba(0,0,0,.35))"></div>';
+                html += '<div class="pv-sub" style="bottom:' + (v.SubtitlePosition / 100 * 540) + 'px;font-size:' + px(size) + ';color:' + v.SubtitleColor + ';opacity:' + (off ? .35 : 1) + '"><span style="' + style + '">I\'ve never seen a storm like this one.</span></div>';
+                if (off) html += '<div style="position:absolute;top:24px;left:48px;font-size:14px;opacity:.8">Subtitles start off. Turn them on with CC.</div>';
+                if (v.SkipIntroMode === 'Button') {
+                    html += '<div style="position:absolute;right:56px;bottom:120px"><span class="pv-btn" style="background:#fff;color:#000;font-size:15px">Skip Intro ⏭</span></div>';
+                } else if (v.SkipIntroMode === 'Auto') {
+                    html += '<div style="position:absolute;right:56px;top:40px"><span class="pv-btn" style="background:rgba(0,0,0,.7);font-size:15px">Skipped intro</span></div>';
+                }
+                return html;
+            }
+
+            function render() {
+                syncBrand2();
+                updateSliderLabels();
+                var v = values();
+                page.style.setProperty('--sk-accent', v.accent);
+                var stage = $('#SkPreview');
+                stage.style.background = v.BackgroundColor;
+                stage.style.color = v.TextColor;
+                stage.innerHTML = previewPage === 'details' ? detailsHtml(v) : previewPage === 'player' ? playerHtml(v) : homeHtml(v);
+                fitPreview();
+            }
+
+            function fitPreview() {
+                var frame = $('#SkPreviewFrame');
+                var k = frame.clientWidth / 960 || 0.5;
+                $('#SkPreview').style.transform = 'scale(' + k + ')';
+                frame.style.height = (540 * k) + 'px';
+            }
+
+            function showPreview(name) {
+                if (!name || name === previewPage) return;
+                previewPage = name;
+                all('.sk-pv-tabs button').forEach(function (b) { b.classList.toggle('on', b.dataset.pv === name); });
+                render();
+            }
+
+            all('.sk-pv-tabs button').forEach(function (b) { b.addEventListener('click', function () { showPreview(b.dataset.pv); }); });
+            // Switch the preview to whatever the setting being changed affects.
+            form.addEventListener('focusin', function (e) {
+                var holder = e.target.closest('[data-preview]');
+                if (holder) showPreview(holder.dataset.preview);
+            });
+            form.addEventListener('input', render);
+            form.addEventListener('change', render);
+            window.addEventListener('resize', fitPreview);
+
+            // ---------- Load ----------
             page.addEventListener('pageshow', function () {
                 Dashboard.showLoadingMsg();
                 ApiClient.getPluginConfiguration(pluginId).then(function (config) {
                     fields().forEach(function (el) {
-                        var value = config[el.getAttribute('data-cfg')];
-                        if (el.type === 'checkbox') {
-                            el.checked = !!value;
-                        } else {
-                            el.value = value === undefined || value === null ? '' : value;
-                        }
+                        var key = el.getAttribute('data-cfg');
+                        var value = config[key];
+                        if (el.type === 'checkbox') el.checked = !!value;
+                        else if (el.type === 'color') el.value = hex6(value, el.value || '#ffffff');
+                        else el.value = value === undefined || value === null ? '' : value;
                     });
-                    Dashboard.hideLoadingMsg();
-                });
+                    var b2 = (config.BrandSecondaryColor || '').trim();
+                    $('#SkBrand2Accent').checked = !b2;
+                    $('#SkBrand2Color').value = hex6(b2, hex6(config.AccentColor, '#e50914'));
+                    render();
+                    return loadLibraries(config.HeaderLibraries);
+                }).then(function () { Dashboard.hideLoadingMsg(); }, function () { Dashboard.hideLoadingMsg(); });
             });
 
-            document.querySelector('#SleekSeerrTest').addEventListener('click', function () {
-                var status = document.querySelector('#SleekSeerrStatus');
-                status.textContent = 'Testing…';
-                ApiClient.getJSON(ApiClient.getUrl('SleekTV/Seerr/Status')).then(function (r) {
-                    status.textContent = r.reachable ? '✓ ' + r.message : '✗ ' + r.message;
-                }, function () {
-                    status.textContent = '✗ Test failed. Is the plugin up to date?';
-                });
-            });
-
-            form.addEventListener('submit', function (e) {
-                e.preventDefault();
-                Dashboard.showLoadingMsg();
-                ApiClient.getPluginConfiguration(pluginId).then(function (config) {
+            // ---------- Save ----------
+            function save() {
+                syncBrand2();
+                syncLibField();
+                return ApiClient.getPluginConfiguration(pluginId).then(function (config) {
                     fields().forEach(function (el) {
                         var key = el.getAttribute('data-cfg');
                         if (el.type === 'checkbox') {
                             config[key] = el.checked;
-                        } else if (el.type === 'number') {
-                            // Decimal fields have a step like "0.05"; the rest are whole numbers on the server.
-                            var isDecimal = (el.getAttribute('step') || '').indexOf('.') >= 0;
-                            var n = isDecimal ? parseFloat(el.value) : parseInt(el.value, 10);
-                            if (!isNaN(n)) { config[key] = n; }
+                        } else if (el.type === 'range') {
+                            var decimal = (el.getAttribute('step') || '').indexOf('.') >= 0;
+                            var n = decimal ? parseFloat(el.value) : parseInt(el.value, 10);
+                            if (!isNaN(n)) config[key] = n;
+                        } else if (el.type === 'color') {
+                            config[key] = el.value.toUpperCase();
                         } else {
                             config[key] = el.value;
                         }
                     });
-                    ApiClient.updatePluginConfiguration(pluginId, config).then(function (result) {
-                        Dashboard.processPluginConfigurationUpdateResult(result);
-                    });
+                    return ApiClient.updatePluginConfiguration(pluginId, config);
                 });
+            }
+
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+                Dashboard.showLoadingMsg();
+                save().then(function (result) { Dashboard.processPluginConfigurationUpdateResult(result); });
                 return false;
+            });
+
+            // Saves first, so it always tests what's in the boxes.
+            $('#SleekSeerrTest').addEventListener('click', function () {
+                var status = $('#SleekSeerrStatus');
+                status.textContent = 'Saving and testing…';
+                save().then(function () {
+                    return ApiClient.getJSON(ApiClient.getUrl('SleekTV/Seerr/Status'));
+                }).then(function (r) {
+                    status.textContent = (r.reachable ? '✓ ' : '✗ ') + r.message;
+                }, function () {
+                    status.textContent = '✗ Test failed. Is the plugin up to date?';
+                });
             });
         })();
     </script>

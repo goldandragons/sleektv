@@ -23,6 +23,22 @@ public class PluginConfiguration : BasePluginConfiguration
     /// <summary>Floating, Solid or Hidden.</summary>
     public string HeaderStyle { get; set; } = "Floating";
 
+    // Header contents and size
+    /// <summary>Library ids to show as header tabs, in order, comma separated. Empty = first 7 libraries.</summary>
+    public string HeaderLibraries { get; set; } = string.Empty;
+    public bool HeaderShowSearch { get; set; } = true;
+    public bool HeaderShowClock { get; set; } = true;
+    public double HeaderScale { get; set; } = 1.0;
+    /// <summary>Background opacity of the floating header, 0–100.</summary>
+    public int HeaderOpacity { get; set; } = 55;
+
+    // Name shown in the header and on the sign-in screen: two words, two colors.
+    public string BrandPrimary { get; set; } = "Sleek";
+    public string BrandPrimaryColor { get; set; } = "#FFFFFF";
+    public string BrandSecondary { get; set; } = "TV";
+    /// <summary>Empty = use the accent color.</summary>
+    public string BrandSecondaryColor { get; set; } = string.Empty;
+
     // Home screen
     public bool ShowHero { get; set; } = true;
     public int HeroHeight { get; set; } = 380;

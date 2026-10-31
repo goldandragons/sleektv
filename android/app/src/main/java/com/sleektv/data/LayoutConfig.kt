@@ -23,6 +23,17 @@ data class LayoutConfig(
     val detailTitleSize: Int = 44,
     val headerStyle: String = "Floating", // Floating | Solid | Hidden
 
+    // Header contents, size and name
+    val headerLibraries: String = "", // library ids in order, comma separated; empty = first 7
+    val headerShowSearch: Boolean = true,
+    val headerShowClock: Boolean = true,
+    val headerScale: Double = 1.0,
+    val headerOpacity: Int = 55, // floating header background, percent
+    val brandPrimary: String = "Sleek",
+    val brandPrimaryColor: String = "#FFFFFF",
+    val brandSecondary: String = "TV",
+    val brandSecondaryColor: String = "", // empty = accent color
+
     // Home
     val showHero: Boolean = true,
     val heroHeight: Int = 380,
@@ -94,6 +105,14 @@ data class LayoutConfig(
     val postersLandscape: Boolean get() = posterStyle.equals("Landscape", true)
     val continueLandscape: Boolean get() = !continueWatchingStyle.equals("Portrait", true)
     val headerHidden: Boolean get() = headerStyle.equals("Hidden", true)
+
+    /** Library ids chosen for the header, normalised (no dashes, lower case). */
+    val headerLibraryIds: List<String>
+        get() = headerLibraries.split(',').map { it.trim().replace("-", "").lowercase() }.filter { it.isNotEmpty() }
+
+    /** Space to leave at the top of a page so content starts below the header. */
+    val headerSpaceDp: Int
+        get() = if (headerHidden) 32 else (48 + 52 * headerScale).toInt()
     val headerSolid: Boolean get() = headerStyle.equals("Solid", true)
 
     /** Keep values in ranges that can't break the UI, whatever gets typed on the server. */
@@ -113,6 +132,8 @@ data class LayoutConfig(
         episodeGridColumns = episodeGridColumns.coerceIn(1, 10),
         episodeThumbWidth = episodeThumbWidth.coerceIn(80, 900),
         skipButtonSeconds = skipButtonSeconds.coerceIn(0, 600),
+        headerScale = headerScale.coerceIn(0.6, 1.6),
+        headerOpacity = headerOpacity.coerceIn(0, 100),
         subtitleSize = subtitleSize.coerceIn(40, 300),
         subtitlePosition = subtitlePosition.coerceIn(0, 45),
     )

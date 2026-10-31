@@ -156,7 +156,7 @@ fun SearchScreen(nav: Nav) {
     Box(Modifier.fillMaxSize()) {
         LazyColumn(
             state = listState,
-            contentPadding = PaddingValues(top = if (layout.headerHidden) 32.dp else 100.dp, bottom = 56.dp),
+            contentPadding = PaddingValues(top = layout.headerSpaceDp.dp, bottom = 160.dp),
             modifier = Modifier
                 .fillMaxSize()
                 .focusRequester(contentFocus),

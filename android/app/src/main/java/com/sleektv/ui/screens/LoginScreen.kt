@@ -44,6 +44,7 @@ import com.sleektv.ui.Nav
 import com.sleektv.ui.Screen
 import com.sleektv.ui.components.SText
 import com.sleektv.ui.components.SleekButton
+import com.sleektv.ui.components.BrandWordmark
 import com.sleektv.ui.theme.Inter
 import com.sleektv.ui.theme.LocalSleekColors
 import kotlinx.coroutines.delay
@@ -162,10 +163,7 @@ fun LoginScreen(nav: Nav) {
     androidx.compose.material3.MaterialTheme(colorScheme = darkColorScheme(primary = c.accent)) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(Modifier.width(480.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    SText("Sleek", size = 44.sp, weight = FontWeight.ExtraBold)
-                    SText("TV", size = 44.sp, weight = FontWeight.ExtraBold, color = c.accent)
-                }
+                BrandWordmark(size = 44, scaleWithFont = false)
 
                 if (pending != null) {
                     // ---------- Quick Connect code ----------

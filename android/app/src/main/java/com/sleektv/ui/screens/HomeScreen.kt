@@ -185,7 +185,7 @@ private fun HomeContent(nav: Nav, home: HomeData, discover: DiscoverData?, first
     val layout = LocalLayout.current
     val heroItems = remember(home, layout.heroSource) { home.heroItems(layout.heroSource) }
     val showHero = layout.showHero && heroItems.isNotEmpty()
-    val topPad = if (showHero || layout.headerHidden) 0.dp else 96.dp
+    val topPad = if (showHero || layout.headerHidden) 0.dp else layout.headerSpaceDp.dp
     val listState = nav.homeListState
     val contentFocus = remember { FocusRequester() }
     val headerEntry = remember { FocusRequester() }
@@ -405,7 +405,7 @@ private fun Hero(
 
         Column(
             Modifier
-                .padding(top = if (layout.headerHidden) 24.dp else 88.dp) // clear of the header when it shows
+                .padding(top = (layout.headerSpaceDp - 12).dp) // clear of the header when it shows
                 .align(Alignment.BottomStart)
                 .padding(start = EDGE.dp, bottom = 18.dp)
                 .fillMaxWidth(0.48f),

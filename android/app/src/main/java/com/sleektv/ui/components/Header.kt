@@ -47,6 +47,8 @@ import com.sleektv.data.BaseItem
 import com.sleektv.ui.theme.LocalLayout
 import com.sleektv.ui.theme.LocalSleekColors
 import com.sleektv.ui.theme.scaledSp
+import com.sleektv.ui.theme.toColorOr
+import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import java.text.DateFormat
 import java.util.Date
@@ -83,18 +85,27 @@ fun SleekHeader(
         }
     }
 
+    val s = layout.headerScale.toFloat()
     val barModifier = if (layout.headerSolid) {
         Modifier
             .fillMaxWidth()
             .background(c.background)
-            .padding(horizontal = EDGE.dp, vertical = 14.dp)
+            .padding(horizontal = EDGE.dp, vertical = (14 * s).dp)
     } else {
         Modifier
             .fillMaxWidth()
             .padding(start = EDGE.dp - 8.dp, end = EDGE.dp - 8.dp, top = 18.dp)
             .clip(RoundedCornerShape(50))
-            .background(Color.Black.copy(alpha = 0.55f))
-            .padding(horizontal = 20.dp, vertical = 8.dp)
+            .background(Color.Black.copy(alpha = layout.headerOpacity / 100f))
+            .padding(horizontal = (20 * s).dp, vertical = (8 * s).dp)
+    }
+
+    // Tabs: the libraries picked in the plugin, in that order; otherwise the first seven.
+    val chosen = layout.headerLibraryIds
+    val tabs = if (chosen.isEmpty()) {
+        views.take(7)
+    } else {
+        chosen.mapNotNull { id -> views.firstOrNull { it.id.replace("-", "").lowercase() == id } }
     }
 
     // While leaving the header with Down, the other pills step out of the way so focus lands on
@@ -128,27 +139,42 @@ fun SleekHeader(
             },
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // Wordmark
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                SText("Sleek", size = scaledSp(20), weight = FontWeight.ExtraBold)
-                SText("TV", size = scaledSp(20), weight = FontWeight.ExtraBold, color = c.accent)
-            }
-            Spacer(Modifier.width(28.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.weight(1f)) {
+            // Wordmark: two words, two colors (set in the plugin).
+            BrandWordmark(size = (20 * s).toInt())
+            Spacer(Modifier.width((28 * s).dp))
+            Row(horizontalArrangement = Arrangement.spacedBy((4 * s).dp), modifier = Modifier.weight(1f)) {
                 NavPill("Home", selected = selectedId == null, leaving = leaving, onClick = onHome,
                     entry = entryFocus.takeIf { selectedId == null })
-                views.take(7).forEach { view ->
+                tabs.forEach { view ->
                     NavPill(view.name.orEmpty(), selected = selectedId == view.id, leaving = leaving, onClick = { onView(view) },
                         entry = entryFocus.takeIf { selectedId == view.id })
                 }
             }
-            NavPill("Search", selected = selectedId == com.sleektv.ui.screens.SEARCH_TAB, leaving = leaving, onClick = onSearch,
-                entry = entryFocus.takeIf { selectedId == com.sleektv.ui.screens.SEARCH_TAB })
-            Spacer(Modifier.width(12.dp))
-            SText(clock, size = scaledSp(14), color = c.muted, weight = FontWeight.Medium)
-            Spacer(Modifier.width(12.dp))
+            if (layout.headerShowSearch) {
+                NavPill("Search", selected = selectedId == com.sleektv.ui.screens.SEARCH_TAB, leaving = leaving, onClick = onSearch,
+                    entry = entryFocus.takeIf { selectedId == com.sleektv.ui.screens.SEARCH_TAB })
+            }
+            if (layout.headerShowClock) {
+                Spacer(Modifier.width((12 * s).dp))
+                SText(clock, size = scaledSp((14 * s).toInt()), color = c.muted, weight = FontWeight.Medium)
+            }
+            Spacer(Modifier.width((12 * s).dp))
             NavPill("Account", selected = false, leaving = leaving, onClick = onAccount)
         }
+    }
+}
+
+/** The app name, e.g. "Sleek" in white + "TV" in the accent color. Used in the header and on sign-in. */
+@Composable
+fun BrandWordmark(size: Int, scaleWithFont: Boolean = true) {
+    val layout = LocalLayout.current
+    val c = LocalSleekColors.current
+    val textSize = if (scaleWithFont) scaledSp(size) else size.sp
+    val first = layout.brandPrimaryColor.takeIf { it.isNotBlank() }?.toColorOr(c.text) ?: c.text
+    val second = layout.brandSecondaryColor.takeIf { it.isNotBlank() }?.toColorOr(c.accent) ?: c.accent
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        if (layout.brandPrimary.isNotEmpty()) SText(layout.brandPrimary, size = textSize, weight = FontWeight.ExtraBold, color = first, maxLines = 1)
+        if (layout.brandSecondary.isNotEmpty()) SText(layout.brandSecondary, size = textSize, weight = FontWeight.ExtraBold, color = second, maxLines = 1)
     }
 }
 
@@ -198,12 +224,13 @@ private fun NavPill(
         contentColor = if (selected) c.text else c.muted,
         focusedContentColor = Color.Black,
     ) {
-        Box(Modifier.padding(horizontal = 16.dp, vertical = 7.dp)) {
+        val sc = LocalLayout.current.headerScale.toFloat()
+        Box(Modifier.padding(horizontal = (16 * sc).dp, vertical = (7 * sc).dp)) {
             androidx.tv.material3.Text(
                 text = label,
                 fontFamily = com.sleektv.ui.theme.Inter,
                 fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
-                fontSize = scaledSp(14),
+                fontSize = scaledSp((14 * sc).toInt()),
                 maxLines = 1,
             )
         }
