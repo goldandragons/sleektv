@@ -10,9 +10,19 @@
         <div class="content-primary">
             <style>
                 #SleekTVConfigPage .content-primary { max-width: none; }
-                #SleekTVConfigPage .sk-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: 2.5em; align-items: start; }
-                @media (max-width: 1100px) { #SleekTVConfigPage .sk-layout { grid-template-columns: 1fr; } #SleekTVConfigPage .sk-preview-col { order: -1; } }
+                #SleekTVConfigPage .sk-layout { display: grid; grid-template-columns: minmax(0, 1fr) var(--sk-pv-width, 440px); gap: 2.5em; align-items: start; }
+                #SleekTVConfigPage .sk-layout.pv-hidden { grid-template-columns: minmax(0, 1fr) auto; }
                 #SleekTVConfigPage .sk-preview-col { position: sticky; top: 5em; }
+                /* Narrow windows: preview goes above the settings and scrolls away with the page. */
+                @media (max-width: 1000px) {
+                    #SleekTVConfigPage .sk-layout, #SleekTVConfigPage .sk-layout.pv-hidden { grid-template-columns: 1fr; }
+                    #SleekTVConfigPage .sk-preview-col { order: -1; position: static; max-width: var(--sk-pv-width, 440px); }
+                }
+                #SleekTVConfigPage .sk-pv-bar { display: flex; align-items: center; gap: .4em; margin-bottom: .6em; flex-wrap: wrap; }
+                #SleekTVConfigPage .sk-pv-bar .sp { flex: 1; }
+                #SleekTVConfigPage .sk-pv-bar .sm { background: rgba(255,255,255,.08); color: inherit; border: none; border-radius: 6px; padding: .3em .6em; cursor: pointer; font-size: .8em; }
+                #SleekTVConfigPage .sk-pv-bar .sm.on { background: rgba(255,255,255,.25); }
+                #SleekTVConfigPage .pv-hidden .sk-pv-body, #SleekTVConfigPage .pv-hidden .sk-pv-tabs, #SleekTVConfigPage .pv-hidden .sk-size { display: none; }
                 #SleekTVConfigPage section { margin-bottom: 2.2em; }
                 #SleekTVConfigPage h2 { margin: 0 0 .6em; font-size: 1.25em; }
                 #SleekTVConfigPage .sk-help { opacity: .7; font-size: .9em; margin: -.3em 0 1em; }
@@ -320,13 +330,24 @@ subtitles { mode: jellyfin|default|always|forced|off; language: eng; size: 120%;
 
                     <!-- ================= Live preview ================= -->
                     <div class="sk-preview-col">
-                        <div class="sk-pv-tabs">
-                            <button type="button" data-pv="home" class="on">Home</button>
-                            <button type="button" data-pv="details">Details</button>
-                            <button type="button" data-pv="player">Player</button>
+                        <div class="sk-pv-bar">
+                            <div class="sk-pv-tabs" style="margin:0">
+                                <button type="button" data-pv="home" class="on">Home</button>
+                                <button type="button" data-pv="details">Details</button>
+                                <button type="button" data-pv="player">Player</button>
+                            </div>
+                            <span class="sp"></span>
+                            <span class="sk-size">
+                                <button type="button" class="sm" data-size="320" title="Small preview">S</button>
+                                <button type="button" class="sm" data-size="440" title="Medium preview">M</button>
+                                <button type="button" class="sm" data-size="600" title="Large preview">L</button>
+                            </span>
+                            <button type="button" class="sm" id="SkPvToggle">Hide preview</button>
                         </div>
-                        <div class="sk-pv-frame" id="SkPreviewFrame"><div class="pv-stage" id="SkPreview"></div></div>
-                        <div class="sk-pv-note">Live preview of the TV screen. Pictures are placeholders; it updates as you change settings.</div>
+                        <div class="sk-pv-body">
+                            <div class="sk-pv-frame" id="SkPreviewFrame"><div class="pv-stage" id="SkPreview"></div></div>
+                            <div class="sk-pv-note">Live preview of the TV screen. Pictures are placeholders; it updates as you change settings.</div>
+                        </div>
                     </div>
                 </div>
             </form>
@@ -614,6 +635,26 @@ subtitles { mode: jellyfin|default|always|forced|off; language: eng; size: 120%;
             }
 
             all('.sk-pv-tabs button').forEach(function (b) { b.addEventListener('click', function () { showPreview(b.dataset.pv); }); });
+
+            // Preview size and show/hide, remembered in this browser.
+            function remember(key, value) { try { localStorage.setItem('sleektv.' + key, value); } catch (e) { } }
+            function recall(key, fallback) { try { return localStorage.getItem('sleektv.' + key) || fallback; } catch (e) { return fallback; } }
+            function setPreviewSize(w) {
+                page.style.setProperty('--sk-pv-width', w + 'px');
+                all('.sk-size .sm').forEach(function (b) { b.classList.toggle('on', b.dataset.size === String(w)); });
+                remember('previewWidth', w);
+                fitPreview();
+            }
+            function setPreviewHidden(hidden) {
+                $('.sk-layout').classList.toggle('pv-hidden', hidden);
+                $('#SkPvToggle').textContent = hidden ? 'Show preview' : 'Hide preview';
+                remember('previewHidden', hidden ? '1' : '0');
+                if (!hidden) fitPreview();
+            }
+            all('.sk-size .sm').forEach(function (b) { b.addEventListener('click', function () { setPreviewSize(b.dataset.size); }); });
+            $('#SkPvToggle').addEventListener('click', function () { setPreviewHidden(!$('.sk-layout').classList.contains('pv-hidden')); });
+            setPreviewSize(recall('previewWidth', '440'));
+            setPreviewHidden(recall('previewHidden', '0') === '1');
             // Switch the preview to whatever the setting being changed affects.
             form.addEventListener('focusin', function (e) {
                 var holder = e.target.closest('[data-preview]');
