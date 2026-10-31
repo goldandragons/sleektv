@@ -304,7 +304,7 @@ private fun DetailContent(nav: Nav, data: DetailData, playFocus: FocusRequester)
                             horizontalArrangement = Arrangement.spacedBy(layout.cardSpacing.dp),
                         ) {
                             itemsIndexed(item.people.take(30), key = { i, p -> "$i-${p.id}" }) { _, p ->
-                                PersonCard(p, api.personImage(p))
+                                PersonCard(p, api.personImage(p), onClick = { nav.push(Screen.Person(p.id, p.name.orEmpty())) })
                             }
                         }
                     }

@@ -43,6 +43,12 @@ import com.sleektv.data.BaseItem
 import com.sleektv.data.SeerrItem
 import com.sleektv.data.episodeCode
 import com.sleektv.ui.components.SeerrRow
+import com.sleektv.ui.components.PersonCard
+import com.sleektv.ui.components.SectionTitle
+import com.sleektv.data.Person
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import com.sleektv.ui.components.rememberHeaderVisible
 import androidx.compose.foundation.lazy.rememberLazyListState
 import com.sleektv.ui.components.SleekClickable
@@ -66,9 +72,10 @@ private data class SearchResults(
     val episodes: List<BaseItem> = emptyList(),
     val seerrMovies: List<SeerrItem> = emptyList(),
     val seerrShows: List<SeerrItem> = emptyList(),
+    val people: List<BaseItem> = emptyList(),
 ) {
     val isEmpty: Boolean
-        get() = movies.isEmpty() && shows.isEmpty() && episodes.isEmpty() && seerrMovies.isEmpty() && seerrShows.isEmpty()
+        get() = movies.isEmpty() && shows.isEmpty() && episodes.isEmpty() && seerrMovies.isEmpty() && seerrShows.isEmpty() && people.isEmpty()
 }
 
 /** Last search, so pressing Back from a result returns to the same results. */
@@ -117,7 +124,8 @@ fun SearchScreen(nav: Nav) {
                     val movies = async { runCatching { api.search(term, "Movie") }.getOrDefault(emptyList()) }
                     val shows = async { runCatching { api.search(term, "Series") }.getOrDefault(emptyList()) }
                     val episodes = async { runCatching { api.search(term, "Episode", 24) }.getOrDefault(emptyList()) }
-                    SearchResults(movies.await(), shows.await(), episodes.await())
+                    val people = async { runCatching { api.searchPeople(term) }.getOrDefault(emptyList()) }
+                    SearchResults(movies.await(), shows.await(), episodes.await(), people = people.await())
                 }
             }
             error = null
@@ -172,7 +180,7 @@ fun SearchScreen(nav: Nav) {
                         onValueChange = { query = it },
                         label = {
                             SText(
-                                if (seerrTab) "Find movies and shows to request" else "Search movies, shows and episodes",
+                                if (seerrTab) "Find movies and shows to request" else "Search movies, shows, episodes and people",
                                 size = 14.sp,
                             )
                         },
@@ -240,6 +248,26 @@ fun SearchScreen(nav: Nav) {
                         onClick = { nav.open(it) },
                         modifier = Modifier.padding(top = layout.rowSpacing.dp),
                     )
+                }
+            }
+            if (results.people.isNotEmpty()) {
+                item(key = "people") {
+                    Column(Modifier.padding(top = layout.rowSpacing.dp)) {
+                        SectionTitle("People")
+                        LazyRow(
+                            contentPadding = PaddingValues(horizontal = EDGE.dp, vertical = 10.dp),
+                            horizontalArrangement = Arrangement.spacedBy(layout.cardSpacing.dp),
+                        ) {
+                            items(results.people, key = { it.id }) { p ->
+                                val person = Person(id = p.id, name = p.name, primaryImageTag = p.imageTags["Primary"])
+                                PersonCard(
+                                    person,
+                                    api.personImage(person),
+                                    onClick = { nav.push(Screen.Person(p.id, p.name.orEmpty())) },
+                                )
+                            }
+                        }
+                    }
                 }
             }
             if (results.seerrMovies.isNotEmpty()) {

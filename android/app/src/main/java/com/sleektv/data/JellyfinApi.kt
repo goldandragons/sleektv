@@ -223,6 +223,22 @@ class JellyfinApi(private val session: Session) {
         ),
     ).items.map { it.sortName ?: it.name.orEmpty() }
 
+    /** Actors, directors, writers… matching a search. */
+    suspend fun searchPeople(term: String, limit: Int = 24): List<BaseItem> = get(
+        ItemsResult.serializer(), "Persons",
+        mapOf("userId" to userId, "searchTerm" to term, "limit" to limit, "enableImages" to true),
+    ).items
+
+    /** Everything in the library a person appears in (newest first). */
+    suspend fun itemsWithPerson(personId: String, includeTypes: String): List<BaseItem> = get(
+        ItemsResult.serializer(), "Items",
+        mapOf(
+            "userId" to userId, "personIds" to personId, "includeItemTypes" to includeTypes,
+            "recursive" to true, "sortBy" to "PremiereDate,SortName", "sortOrder" to "Descending",
+            "fields" to fields, "limit" to 100,
+        ),
+    ).items
+
     /** Library-wide search; the server orders results by relevance. */
     suspend fun search(term: String, includeTypes: String, limit: Int = 30): List<BaseItem> = get(
         ItemsResult.serializer(), "Items",

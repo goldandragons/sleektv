@@ -317,11 +317,11 @@ fun MediaRow(
 
 /** Round headshot + name + role. */
 @Composable
-fun PersonCard(person: Person, imageUrl: String?, modifier: Modifier = Modifier) {
+fun PersonCard(person: Person, imageUrl: String?, modifier: Modifier = Modifier, onClick: () -> Unit = {}) {
     val c = LocalSleekColors.current
     Column(modifier.width(120.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         SleekClickable(
-            onClick = {},
+            onClick = onClick,
             shape = CircleShape,
             modifier = Modifier.size(104.dp),
         ) {

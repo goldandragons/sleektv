@@ -30,6 +30,7 @@ import com.sleektv.ui.screens.LoginScreen
 import com.sleektv.ui.screens.PlayerScreen
 import com.sleektv.ui.screens.SearchScreen
 import com.sleektv.ui.screens.SeerrDetailScreen
+import com.sleektv.ui.screens.PersonScreen
 import com.sleektv.data.SeerrItem
 import com.sleektv.data.WebCss
 import androidx.compose.runtime.DisposableEffect
@@ -51,6 +52,7 @@ sealed interface Screen {
     data class Detail(val itemId: String) : Screen
     data class Player(val itemId: String) : Screen
     data class SeerrDetail(val mediaType: String, val tmdbId: Int) : Screen
+    data class Person(val personId: String, val name: String) : Screen
 }
 
 /** Seerr rows for the home screen. */
@@ -244,6 +246,7 @@ fun SleekTvApp(app: SleekApp) {
                     is Screen.Detail -> DetailScreen(nav, screen.itemId)
                     is Screen.Player -> PlayerScreen(nav, screen.itemId)
                     is Screen.SeerrDetail -> SeerrDetailScreen(nav, screen.mediaType, screen.tmdbId)
+                    is Screen.Person -> PersonScreen(nav, screen.personId, screen.name)
                 }
             }
         }
