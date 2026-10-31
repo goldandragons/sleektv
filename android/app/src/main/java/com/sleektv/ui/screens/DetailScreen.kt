@@ -275,7 +275,11 @@ private fun DetailContent(nav: Nav, data: DetailData, playFocus: FocusRequester)
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                             modifier = Modifier.onFocusChanged { state ->
                                 if (state.hasFocus && (listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 0)) {
-                                    scope.launch { listState.animateScrollToItem(0) }
+                                    scope.launch {
+                                    // Wait for the TV's own scroll-to-button to start, then override it.
+                                    delay(120)
+                                    listState.animateScrollToItem(0)
+                                }
                                 }
                             },
                         ) {

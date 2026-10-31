@@ -222,7 +222,11 @@ private fun HomeContent(nav: Nav, home: HomeData, discover: DiscoverData?, first
                             heroFocused = focused
                             // Back up on the banner: show all of it, not just the buttons.
                             if (focused && (listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 0)) {
-                                scope.launch { listState.animateScrollToItem(0) }
+                                scope.launch {
+                                    // Wait for the TV's own scroll-to-button to start, then override it.
+                                    delay(120)
+                                    listState.animateScrollToItem(0)
+                                }
                             }
                         },
                         onUp = {
