@@ -9,7 +9,11 @@
     <div data-role="content">
         <div class="content-primary">
             <style>
-                #SleekTVConfigPage .content-primary { max-width: none; }
+                /* Jellyfin keeps plugin pages in a narrow column; use the full width instead. */
+                #SleekTVConfigPage, #SleekTVConfigPage > [data-role=content], #SleekTVConfigPage .content-primary { max-width: none !important; width: auto !important; }
+                /* Wide screens: settings flow into columns instead of one long, stretched list. */
+                #SleekTVConfigPage .sk-sections { column-width: 480px; column-gap: 3em; }
+                #SleekTVConfigPage .sk-sections section { break-inside: avoid; display: inline-block; width: 100%; }
                 #SleekTVConfigPage .sk-layout { display: grid; grid-template-columns: minmax(0, 1fr) var(--sk-pv-width, 440px); gap: 2.5em; align-items: start; }
                 #SleekTVConfigPage .sk-layout.pv-hidden { grid-template-columns: minmax(0, 1fr) auto; }
                 #SleekTVConfigPage .sk-preview-col { position: sticky; top: 5em; }
@@ -100,6 +104,7 @@
                 <div class="sk-layout">
                     <!-- ================= Settings ================= -->
                     <div>
+                      <div class="sk-sections">
                         <section data-preview="home">
                             <h2>Header</h2>
                             <div class="sk-grid">
@@ -331,7 +336,8 @@ subtitles { mode: jellyfin|default|always|forced|off; language: eng; size: 120%;
                             </details>
                         </section>
 
-                        <button is="emby-button" type="submit" class="raised button-submit block emby-button"><span>Save</span></button>
+                      </div>
+                        <button is="emby-button" type="submit" class="raised button-submit block emby-button" style="max-width:480px"><span>Save</span></button>
                     </div>
 
                     <!-- ================= Live preview ================= -->
@@ -670,8 +676,18 @@ subtitles { mode: jellyfin|default|always|forced|off; language: eng; size: 120%;
             form.addEventListener('change', render);
             window.addEventListener('resize', fitPreview);
 
+            // Clear any width limit Jellyfin puts on this page's containers (class names vary between versions).
+            function useFullWidth() {
+                for (var el = form.parentElement; el; el = el.parentElement) {
+                    if (getComputedStyle(el).maxWidth !== 'none') el.style.maxWidth = 'none';
+                    if (el === page) break;
+                }
+                fitPreview();
+            }
+
             // ---------- Load ----------
             page.addEventListener('pageshow', function () {
+                useFullWidth();
                 Dashboard.showLoadingMsg();
                 ApiClient.getPluginConfiguration(pluginId).then(function (config) {
                     fields().forEach(function (el) {
