@@ -19,6 +19,14 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.background
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.graphics.graphicsLayer
+import com.sleektv.ui.components.ScrollOnlyWhenNeeded
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -128,7 +136,7 @@ fun DetailScreen(nav: Nav, itemId: String) {
     when {
         d == null && error != null -> CenterMessage(error.orEmpty())
         d == null -> CenterMessage("Loading…")
-        else -> DetailContent(nav, d, playFocus)
+        else -> ScrollOnlyWhenNeeded { DetailContent(nav, d, playFocus) }
     }
 }
 
@@ -168,6 +176,14 @@ private fun DetailContent(nav: Nav, data: DetailData, playFocus: FocusRequester)
         else -> "▶  Play"
     }
 
+    // Once you scroll past the title section (episodes, cast…), the backdrop blurs and dims.
+    val listState = rememberLazyListState()
+    val pastHeader by remember {
+        derivedStateOf { listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 120 }
+    }
+    val blurAmount by animateFloatAsState(if (pastHeader) 1f else 0f, tween(450), label = "backdropBlur")
+    val bg = LocalSleekColors.current.background
+
     Box(Modifier.fillMaxSize()) {
         // Full-page backdrop, like SleekFin's detail pages.
         AsyncImage(
@@ -175,11 +191,34 @@ private fun DetailContent(nav: Nav, data: DetailData, playFocus: FocusRequester)
             contentDescription = null,
             contentScale = ContentScale.Crop,
             alignment = Alignment.TopCenter,
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer { alpha = 1f - blurAmount * 0.999f },
         )
+        // Blurred copy: a tiny version stretched to full screen looks soft on every Android version,
+        // and Android 12+ adds a real blur on top.
+        if (blurAmount > 0f) {
+            AsyncImage(
+                model = api.backdrop(item, width = 96),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                alignment = Alignment.TopCenter,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer { alpha = blurAmount }
+                    .blur(24.dp),
+            )
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .graphicsLayer { alpha = blurAmount }
+                    .background(bg.copy(alpha = 0.45f)),
+            )
+        }
         BackdropScrim(leftStrength = 0.95f)
 
         LazyColumn(
+            state = listState,
             contentPadding = PaddingValues(bottom = 64.dp),
             modifier = Modifier.fillMaxSize(),
         ) {

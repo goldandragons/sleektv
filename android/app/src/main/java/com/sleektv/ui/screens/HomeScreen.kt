@@ -50,6 +50,7 @@ import com.sleektv.ui.Nav
 import com.sleektv.ui.Screen
 import com.sleektv.ui.components.SeerrRow
 import com.sleektv.ui.components.rememberHeaderVisible
+import com.sleektv.ui.components.ScrollOnlyWhenNeeded
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.input.key.Key
@@ -168,7 +169,7 @@ fun HomeScreen(nav: Nav) {
             SleekButton("Sign in again", onClick = { nav.logout() }, primary = true)
         }
         home == null -> CenterMessage("Loading…")
-        else -> HomeContent(nav, home, nav.discoverCache, firstFocus)
+        else -> ScrollOnlyWhenNeeded { HomeContent(nav, home, nav.discoverCache, firstFocus) }
     }
 }
 
