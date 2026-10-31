@@ -8,7 +8,7 @@ import kotlin.math.roundToInt
  *
  *   :root    { accent; background; surface; text; font-scale }
  *   header   { style: floating|solid|hidden }
- *   hero     { display: none|block; height; title-size; rotate }
+ *   hero     { display: none|block; height; title-size; rotate; source: continue|latest }
  *   section  { title-size; spacing }
  *   card     { width; radius; spacing; focus-scale; shape: portrait|landscape; titles; badges }
  *   continue { shape: portrait|landscape }
@@ -81,6 +81,11 @@ object CustomStyles {
                 "height" -> int(v)?.let { c.copy(heroHeight = it) }
                 "title-size", "font-size" -> int(v)?.let { c.copy(heroTitleSize = it) }
                 "rotate", "rotate-seconds", "interval" -> int(v)?.let { c.copy(heroAutoRotateSeconds = it) }
+                "source", "content" -> when (v.lowercase()) {
+                    "continue", "continue-watching", "continuewatching", "resume" -> c.copy(heroSource = "ContinueWatching")
+                    "latest", "new" -> c.copy(heroSource = "Latest")
+                    else -> null
+                }
                 else -> null
             }
 

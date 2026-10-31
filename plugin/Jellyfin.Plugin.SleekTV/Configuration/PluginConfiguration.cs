@@ -27,6 +27,9 @@ public class PluginConfiguration : BasePluginConfiguration
     public bool ShowHero { get; set; } = true;
     public int HeroHeight { get; set; } = 380;
     public int HeroAutoRotateSeconds { get; set; } = 8;
+
+    /// <summary>ContinueWatching (in-progress + Next Up, falls back to Latest) or Latest.</summary>
+    public string HeroSource { get; set; } = "ContinueWatching";
     public string HomeRows { get; set; } = "ContinueWatching,NextUp,Latest,Discover,Libraries";
     public int LatestItemsPerLibrary { get; set; } = 20;
 

@@ -36,6 +36,13 @@ import com.sleektv.data.BaseItem
 import com.sleektv.data.JellyfinApi
 import com.sleektv.data.LayoutConfig
 import com.sleektv.data.episodeCode
+import com.sleektv.data.cardTitle
+import com.sleektv.data.isEpisode
+import com.sleektv.data.progress
+import com.sleektv.data.runtimeText
+import com.sleektv.ui.components.ProgressBar
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import com.sleektv.data.metaLine
 import com.sleektv.data.SeerrItem
 import com.sleektv.ui.DiscoverData
@@ -66,8 +73,21 @@ data class HomeData(
     val nextUp: List<BaseItem>,
     val latest: List<Pair<BaseItem, List<BaseItem>>>,
 ) {
-    /** Movies and shows with a backdrop, alternating between libraries, for the hero. */
-    val heroItems: List<BaseItem>
+    /**
+     * What the hero banner rotates through.
+     * "ContinueWatching": in-progress items, then Next Up; falls back to Latest if both are empty.
+     * "Latest": newly added movies and shows, alternating between libraries.
+     */
+    fun heroItems(source: String): List<BaseItem> {
+        if (source.equals("ContinueWatching", ignoreCase = true)) {
+            val hasArt = { it: BaseItem -> it.backdropImageTags.isNotEmpty() || it.parentBackdropImageTags.isNotEmpty() }
+            val watching = (resume + nextUp).distinctBy { it.id }.filter(hasArt).take(10)
+            if (watching.isNotEmpty()) return watching
+        }
+        return latestHero
+    }
+
+    private val latestHero: List<BaseItem>
         get() {
             val pools = latest.map { (_, items) -> items.filter { it.backdropImageTags.isNotEmpty() } }
             val out = mutableListOf<BaseItem>()
@@ -149,7 +169,7 @@ fun HomeScreen(nav: Nav) {
 private fun HomeContent(nav: Nav, home: HomeData, discover: DiscoverData?, firstFocus: FocusRequester) {
     val api = nav.app.api
     val layout = LocalLayout.current
-    val heroItems = remember(home) { home.heroItems }
+    val heroItems = remember(home, layout.heroSource) { home.heroItems(layout.heroSource) }
     val showHero = layout.showHero && heroItems.isNotEmpty()
     val topPad = if (showHero || layout.headerHidden) 0.dp else 96.dp
     val listState = nav.homeListState
@@ -350,25 +370,35 @@ private fun Hero(
                 )
             } else {
                 SText(
-                    item.name.orEmpty(),
+                    item.cardTitle,
                     size = scaledSp(layout.heroTitleSize),
                     weight = FontWeight.ExtraBold,
                     maxLines = 2,
                 )
             }
             Spacer(Modifier.height(14.dp))
-            val meta = item.metaLine()
+            // Episodes: "S2:E5 · Episode name"; everything else: year · rating · runtime.
+            val meta = if (item.isEpisode) {
+                listOfNotNull(item.episodeCode, item.name, item.runtimeText).joinToString("  ·  ")
+            } else {
+                item.metaLine()
+            }
             if (meta.isNotBlank()) {
                 SText(meta, size = scaledSp(14), weight = FontWeight.Medium, color = c.muted, maxLines = 1)
                 Spacer(Modifier.height(8.dp))
+            }
+            item.progress?.let {
+                ProgressBar(it, Modifier.widthIn(max = 320.dp).clip(RoundedCornerShape(2.dp)))
+                Spacer(Modifier.height(10.dp))
             }
             item.overview?.takeIf { it.isNotBlank() }?.let {
                 SText(it, size = scaledSp(14), color = c.muted, maxLines = 3)
                 Spacer(Modifier.height(18.dp))
             }
+            val resumable = (item.userData?.playbackPositionTicks ?: 0L) > 0L
             Row(Modifier.onFocusChanged { hasFocus = it.hasFocus }) {
                 SleekButton(
-                    text = "▶  Play",
+                    text = if (resumable) "▶  Resume" else "▶  Play",
                     onClick = { onPlay(item) },
                     primary = true,
                     modifier = if (playFocus != null) Modifier.focusRequester(playFocus) else Modifier,

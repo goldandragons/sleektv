@@ -27,6 +27,7 @@ data class LayoutConfig(
     val showHero: Boolean = true,
     val heroHeight: Int = 380,
     val heroAutoRotateSeconds: Int = 8,
+    val heroSource: String = "ContinueWatching", // ContinueWatching | Latest
     val homeRows: String = "ContinueWatching,NextUp,Latest,Discover,Libraries",
     val latestItemsPerLibrary: Int = 20,
 

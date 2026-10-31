@@ -48,6 +48,12 @@
                 <h2>Home screen</h2>
                 <div class="checkboxContainer"><label><input is="emby-checkbox" type="checkbox" data-cfg="ShowHero" /><span>Show hero banner</span></label></div>
                 <div class="sleek-grid">
+                    <div class="selectContainer">
+                        <select is="emby-select" data-cfg="HeroSource" label="Hero banner shows">
+                            <option value="ContinueWatching">Continue Watching (falls back to Latest)</option>
+                            <option value="Latest">Latest added</option>
+                        </select>
+                    </div>
                     <div class="inputContainer"><input is="emby-input" type="number" min="150" max="900" data-cfg="HeroHeight" label="Hero height" /></div>
                     <div class="inputContainer"><input is="emby-input" type="number" min="0" max="60" data-cfg="HeroAutoRotateSeconds" label="Hero rotate every (seconds, 0 = off)" /></div>
                     <div class="inputContainer"><input is="emby-input" type="number" min="5" max="100" data-cfg="LatestItemsPerLibrary" label="Items per 'Latest' row" /></div>
@@ -158,7 +164,7 @@
                     <summary>Supported selectors and properties</summary>
 <pre>:root    { accent; background; surface; text; font-scale }
 header   { style: floating|solid|hidden }
-hero    { display: none|block; height; title-size; rotate }
+hero    { display: none|block; height; title-size; rotate; source: continue|latest }
 section  { title-size; spacing }          /* row headers and gaps */
 card     { width; radius; spacing; focus-scale; shape: portrait|landscape;
            titles: show|hide; badges: show|hide }
