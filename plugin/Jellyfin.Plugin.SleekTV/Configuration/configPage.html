@@ -165,6 +165,12 @@
                                         <option value="Latest">Latest added</option>
                                     </select>
                                 </div>
+                                <div class="selectContainer">
+                                    <select is="emby-select" data-cfg="BannerRemoveScope" label="Remove button on an episode marks">
+                                        <option value="Show">The whole show watched</option>
+                                        <option value="Episode">Just that episode watched</option>
+                                    </select>
+                                </div>
                             </div>
                             <div class="sk-slider"><label>Banner height <output></output></label><input type="range" data-cfg="HeroHeight" min="200" max="700" step="10" data-unit=""></div>
                             <div class="sk-slider"><label>Change banner every <output></output></label><input type="range" data-cfg="HeroAutoRotateSeconds" min="0" max="30" step="1" data-unit=" s" data-zero="never"></div>
@@ -532,7 +538,7 @@ subtitles { mode: jellyfin|default|always|forced|off; language: eng; size: 120%;
                         '<div class="pv-hero-text"><div style="font-size:' + px(v.HeroTitleSize * fs) + ';font-weight:800;line-height:1.05">' + (cw ? 'The Long Night' : 'New Arrival') + '</div>' +
                         '<div class="pv-meta" style="font-size:' + px(14 * fs) + '">' + (cw ? 'S2:E5 · Into the Storm · 42m' : '2026 · PG-13 · 1h 52m · ★ 7.8') + '</div>' +
                         (cw ? '<div class="pv-prog"><i style="width:45%;background:' + v.accent + '"></i></div>' : '') +
-                        '<div class="pv-btns"><span class="pv-btn" style="background:' + v.accent + ';font-size:' + px(15 * fs) + '">▶ ' + (cw ? 'Resume' : 'Play') + '</span><span class="pv-btn" style="font-size:' + px(15 * fs) + '">More info</span></div></div></div>';
+                        '<div class="pv-btns"><span class="pv-btn" style="background:' + v.accent + ';font-size:' + px(15 * fs) + '">▶ ' + (cw ? 'Resume' : 'Play') + '</span><span class="pv-btn" style="font-size:' + px(15 * fs) + '">More info</span><span class="pv-btn" style="font-size:' + px(15 * fs) + '">✕ Remove</span></div></div></div>';
                 }
                 html += cardsRow(v, 'Continue Watching', v.ContinueWatchingStyle !== 'Portrait', 6, { focus: !v.ShowHero, progress: true, offset: 3, sub: 'S1:E4' });
                 html += cardsRow(v, 'Latest in Movies', v.PosterStyle === 'Landscape', 9, { focus: false, offset: 1 });

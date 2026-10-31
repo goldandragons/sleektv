@@ -39,6 +39,7 @@ data class LayoutConfig(
     val heroHeight: Int = 380,
     val heroAutoRotateSeconds: Int = 8,
     val heroSource: String = "ContinueWatching", // ContinueWatching | Latest
+    val bannerRemoveScope: String = "Show", // Show (whole series) | Episode — what Remove marks watched
     val homeRows: String = "ContinueWatching,NextUp,Latest,Discover,Libraries",
     val latestItemsPerLibrary: Int = 20,
 

@@ -130,6 +130,7 @@ fun HomeScreen(nav: Nav) {
     var data by remember { mutableStateOf(nav.homeCache) }
     var error by remember { mutableStateOf<String?>(null) }
     val firstFocus = remember { FocusRequester() }
+    val reloadScope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
         nav.refreshLayout()
@@ -174,16 +175,29 @@ fun HomeScreen(nav: Nav) {
             SleekButton("Sign in again", onClick = { nav.logout() }, primary = true)
         }
         home == null -> CenterMessage("Loading…")
-        else -> ScrollOnlyWhenNeeded { HomeContent(nav, home, nav.discoverCache, firstFocus) }
+        else -> ScrollOnlyWhenNeeded {
+            HomeContent(nav, home, nav.discoverCache, firstFocus, onReload = {
+                reloadScope.launch {
+                    runCatching { loadHome(api, layout) }.getOrNull()?.let { fresh ->
+                        data = fresh
+                        nav.homeCache = fresh
+                    }
+                }
+            })
+        }
     }
 }
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-private fun HomeContent(nav: Nav, home: HomeData, discover: DiscoverData?, firstFocus: FocusRequester) {
+private fun HomeContent(nav: Nav, home: HomeData, discover: DiscoverData?, firstFocus: FocusRequester, onReload: () -> Unit) {
     val api = nav.app.api
     val layout = LocalLayout.current
-    val heroItems = remember(home, layout.heroSource) { home.heroItems(layout.heroSource) }
+    // Items removed from the banner with "Remove" (ids of items, and of shows when the whole show was marked).
+    var removed by remember { mutableStateOf(emptySet<String>()) }
+    val heroItems = remember(home, layout.heroSource, removed) {
+        home.heroItems(layout.heroSource).filterNot { it.id in removed || (it.seriesId != null && it.seriesId in removed) }
+    }
     val showHero = layout.showHero && heroItems.isNotEmpty()
     val topPad = if (showHero || layout.headerHidden) 0.dp else layout.headerSpaceDp.dp
     val listState = nav.homeListState
@@ -218,6 +232,17 @@ private fun HomeContent(nav: Nav, home: HomeData, discover: DiscoverData?, first
                         playFocus = heroFocus,
                         onPlay = { nav.play(it) },
                         onInfo = { nav.open(it) },
+                        onRemove = { item ->
+                            // Episodes: the whole show or just the episode, as set in the plugin. Movies: the movie.
+                            val wholeShow = item.isEpisode && item.seriesId != null &&
+                                !layout.bannerRemoveScope.equals("Episode", ignoreCase = true)
+                            val target = if (wholeShow) item.seriesId!! else item.id
+                            removed = removed + item.id + (if (wholeShow) setOf(target) else emptySet())
+                            scope.launch {
+                                runCatching { nav.app.api.setWatched(target, true) }
+                                onReload()
+                            }
+                        },
                         onFocusChange = { focused ->
                             heroFocused = focused
                             // Back up on the banner: show all of it, not just the buttons.
@@ -365,10 +390,12 @@ private fun Hero(
     onInfo: (BaseItem) -> Unit,
     onFocusChange: (Boolean) -> Unit,
     onUp: () -> Boolean,
+    onRemove: (BaseItem) -> Unit,
 ) {
     val layout = LocalLayout.current
     var playFocused by remember { mutableStateOf(false) }
     var infoFocused by remember { mutableStateOf(false) }
+    var removeFocused by remember { mutableStateOf(false) }
     val c = LocalSleekColors.current
     var index by remember { mutableIntStateOf(0) }
     var hasFocus by remember { mutableStateOf(false) }
@@ -453,7 +480,7 @@ private fun Hero(
                 Spacer(Modifier.height(18.dp))
             }
             val resumable = (item.userData?.playbackPositionTicks ?: 0L) > 0L
-            // Left from Play / Right from More info flips slides; Up hands focus to the header.
+            // Left from Play / Right from Remove flips slides; Up hands focus to the header.
             Row(
                 Modifier
                     .onFocusChanged {
@@ -467,7 +494,7 @@ private fun Hero(
                                 index = (index - 1 + items.size) % items.size
                                 true
                             }
-                            e.key == Key.DirectionRight && infoFocused && items.size > 1 -> {
+                            e.key == Key.DirectionRight && removeFocused && items.size > 1 -> {
                                 index = (index + 1) % items.size
                                 true
                             }
@@ -488,6 +515,13 @@ private fun Hero(
                     text = "More info",
                     onClick = { onInfo(item) },
                     modifier = Modifier.onFocusChanged { infoFocused = it.isFocused },
+                )
+                Spacer(Modifier.width(12.dp))
+                // Marks it watched so it leaves the banner (and Continue Watching / Next Up).
+                SleekButton(
+                    text = "✕  Remove",
+                    onClick = { onRemove(item) },
+                    modifier = Modifier.onFocusChanged { removeFocused = it.isFocused },
                 )
             }
             Spacer(Modifier.height(16.dp))

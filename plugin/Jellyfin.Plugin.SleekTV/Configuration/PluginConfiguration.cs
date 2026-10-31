@@ -46,6 +46,9 @@ public class PluginConfiguration : BasePluginConfiguration
 
     /// <summary>ContinueWatching (in-progress + Next Up, falls back to Latest) or Latest.</summary>
     public string HeroSource { get; set; } = "ContinueWatching";
+
+    /// <summary>What the banner's Remove button marks watched for an episode: Show (whole series) or Episode.</summary>
+    public string BannerRemoveScope { get; set; } = "Show";
     public string HomeRows { get; set; } = "ContinueWatching,NextUp,Latest,Discover,Libraries";
     public int LatestItemsPerLibrary { get; set; } = 20;
 
