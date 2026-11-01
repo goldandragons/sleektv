@@ -47,6 +47,9 @@ public class PluginConfiguration : BasePluginConfiguration
     /// <summary>ContinueWatching (in-progress + Next Up, falls back to Latest) or Latest.</summary>
     public string HeroSource { get; set; } = "ContinueWatching";
 
+    /// <summary>Holding OK on a card: Menu (quick menu) or ToggleWatched (instantly mark watched/unwatched).</summary>
+    public string HoldAction { get; set; } = "Menu";
+
     /// <summary>What the banner's Remove button marks watched for an episode: Show (whole series) or Episode.</summary>
     public string BannerRemoveScope { get; set; } = "Show";
     public string HomeRows { get; set; } = "ContinueWatching,NextUp,Latest,Discover,Libraries";

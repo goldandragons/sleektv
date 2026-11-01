@@ -33,6 +33,38 @@ import com.sleektv.ui.screens.SeerrDetailScreen
 import com.sleektv.ui.screens.PersonScreen
 import com.sleektv.data.SeerrItem
 import com.sleektv.data.WebCss
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.sleektv.data.cardSubtitle
+import com.sleektv.data.cardTitle
+import com.sleektv.data.isWatched
+import com.sleektv.ui.components.LocalItemHold
+import com.sleektv.ui.components.LocalWatchedOverrides
+import com.sleektv.ui.components.SText
+import com.sleektv.ui.components.SleekClickable
+import com.sleektv.ui.theme.Inter
 import androidx.compose.runtime.DisposableEffect
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -50,7 +82,7 @@ sealed interface Screen {
     data object Search : Screen
     data class Library(val view: BaseItem) : Screen
     data class Detail(val itemId: String) : Screen
-    data class Player(val itemId: String) : Screen
+    data class Player(val itemId: String, val fromStart: Boolean = false) : Screen
     data class SeerrDetail(val mediaType: String, val tmdbId: Int) : Screen
     data class Person(val personId: String, val name: String) : Screen
 }
@@ -111,6 +143,40 @@ class Nav(
     }
 
     fun play(item: BaseItem) = push(Screen.Player(item.id))
+
+    // ---------- Watched status and the hold-OK quick menu ----------
+
+    /** Watched changes made in this session; cards read these so checkmarks update instantly. */
+    val watchedOverrides = mutableStateMapOf<String, Boolean>()
+
+    /** Goes up whenever watched status changes, so open pages can refresh (e.g. which episode Resume plays). */
+    var dataVersion by mutableIntStateOf(0)
+        private set
+
+    var menuFor by mutableStateOf<BaseItem?>(null)
+    var toast by mutableStateOf<String?>(null)
+
+    fun isWatched(item: BaseItem): Boolean = watchedOverrides[item.id] ?: item.isWatched
+
+    /** What holding OK on a card does: quick menu, or toggle watched straight away (plugin setting). */
+    fun hold(item: BaseItem) {
+        if (layout.holdAction.equals("ToggleWatched", ignoreCase = true)) setWatched(item, !isWatched(item))
+        else menuFor = item
+    }
+
+    fun setWatched(item: BaseItem, watched: Boolean) {
+        watchedOverrides[item.id] = watched
+        toast = if (watched) "Marked as watched" else "Marked as unwatched"
+        app.appScope.launch(Dispatchers.Main) {
+            try {
+                app.api.setWatched(item.id, watched)
+                dataVersion++
+            } catch (e: Exception) {
+                watchedOverrides.remove(item.id)
+                toast = "Couldn't update: ${e.message ?: "server error"}"
+            }
+        }
+    }
 
     /** Opens a Seerr title; if it's already in Jellyfin, goes straight to the library page. */
     fun openSeerr(item: SeerrItem) {
@@ -230,6 +296,10 @@ fun SleekTvApp(app: SleekApp) {
     }
 
     SleekTheme(layout.value) {
+      CompositionLocalProvider(
+        LocalItemHold provides nav::hold,
+        LocalWatchedOverrides provides nav.watchedOverrides,
+      ) {
         Box(
             Modifier
                 .fillMaxSize()
@@ -244,11 +314,106 @@ fun SleekTvApp(app: SleekApp) {
                     Screen.Search -> SearchScreen(nav)
                     is Screen.Library -> LibraryScreen(nav, screen.view)
                     is Screen.Detail -> DetailScreen(nav, screen.itemId)
-                    is Screen.Player -> PlayerScreen(nav, screen.itemId)
+                    is Screen.Player -> PlayerScreen(nav, screen.itemId, screen.fromStart)
                     is Screen.SeerrDetail -> SeerrDetailScreen(nav, screen.mediaType, screen.tmdbId)
                     is Screen.Person -> PersonScreen(nav, screen.personId, screen.name)
                 }
             }
+            nav.menuFor?.let { ItemQuickMenu(nav, it) }
+            ToastPill(nav)
+        }
+      }
+    }
+}
+
+
+/** Hold-OK menu: mark watched/unwatched (pre-selected), play from the start, go to the show. */
+@Composable
+private fun ItemQuickMenu(nav: Nav, item: BaseItem) {
+    val c = LocalSleekColors.current
+    val first = remember { FocusRequester() }
+    val watched = nav.isWatched(item)
+    val resumable = (item.userData?.playbackPositionTicks ?: 0L) > 0L && (item.isEpisode || item.type == "Movie")
+    fun close() { nav.menuFor = null }
+    BackHandler { close() }
+    LaunchedEffect(item.id) { runCatching { first.requestFocus() } }
+
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.6f)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            Modifier
+                .width(420.dp)
+                .clip(RoundedCornerShape(18.dp))
+                .background(c.surface)
+                .padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            SText(item.cardTitle, size = 22.sp, weight = FontWeight.Bold, maxLines = 2)
+            item.cardSubtitle?.takeIf { it.isNotBlank() }?.let { SText(it, size = 14.sp, color = c.muted, maxLines = 1) }
+            Spacer(Modifier.height(6.dp))
+            MenuButton(
+                if (watched) "✓  Mark as unwatched" else "✓  Mark as watched",
+                Modifier.focusRequester(first),
+            ) { close(); nav.setWatched(item, !watched) }
+            if (resumable) MenuButton("▶  Play from the beginning") { close(); nav.push(Screen.Player(item.id, fromStart = true)) }
+            if (item.isEpisode && item.seriesId != null && (nav.current as? Screen.Detail)?.itemId != item.seriesId) {
+                MenuButton("Go to show") { close(); nav.push(Screen.Detail(item.seriesId)) }
+            }
+            MenuButton("Cancel") { close() }
+        }
+    }
+}
+
+@Composable
+private fun MenuButton(text: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    val c = LocalSleekColors.current
+    SleekClickable(
+        onClick = onClick,
+        shape = RoundedCornerShape(12.dp),
+        focusScale = 1.03f,
+        containerColor = Color.White.copy(alpha = 0.06f),
+        focusedContainerColor = Color.White,
+        contentColor = c.text,
+        focusedContentColor = Color.Black,
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        androidx.tv.material3.Text(
+            text = text,
+            modifier = Modifier.padding(horizontal = 18.dp, vertical = 12.dp),
+            fontFamily = Inter,
+            fontWeight = FontWeight.SemiBold,
+            fontSize = 16.sp,
+        )
+    }
+}
+
+/** Small confirmation at the bottom of the screen, e.g. "Marked as watched". */
+@Composable
+private fun BoxScope.ToastPill(nav: Nav) {
+    val message = nav.toast
+    LaunchedEffect(message) {
+        if (message != null) {
+            kotlinx.coroutines.delay(2_200)
+            nav.toast = null
+        }
+    }
+    AnimatedVisibility(
+        visible = message != null,
+        enter = fadeIn(),
+        exit = fadeOut(),
+        modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 48.dp),
+    ) {
+        Box(
+            Modifier
+                .clip(RoundedCornerShape(50))
+                .background(Color.Black.copy(alpha = 0.85f))
+                .padding(horizontal = 22.dp, vertical = 12.dp),
+        ) {
+            SText(message ?: "", size = 15.sp, weight = FontWeight.SemiBold, color = Color.White)
         }
     }
 }

@@ -224,6 +224,12 @@
                             <div class="sk-slider"><label>Zoom on the selected card <output></output></label><input type="range" data-cfg="FocusScale" min="1" max="1.3" step="0.01" data-unit="×"></div>
                             <div class="checkboxContainer"><label><input is="emby-checkbox" type="checkbox" data-cfg="ShowTitlesUnderCards" /><span>Titles under cards</span></label></div>
                             <div class="checkboxContainer"><label><input is="emby-checkbox" type="checkbox" data-cfg="ShowWatchedBadges" /><span>Watched checkmarks</span></label></div>
+                            <div class="selectContainer">
+                                <select is="emby-select" data-cfg="HoldAction" label="Holding OK on a movie, show or episode">
+                                    <option value="Menu">Opens a quick menu (mark watched, play from start, go to show)</option>
+                                    <option value="ToggleWatched">Marks it watched / unwatched instantly</option>
+                                </select>
+                            </div>
                         </section>
 
                         <section data-preview="details">

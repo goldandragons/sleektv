@@ -127,6 +127,10 @@ fun DetailScreen(nav: Nav, itemId: String) {
     var error by remember { mutableStateOf<String?>(null) }
     val playFocus = remember { FocusRequester() }
 
+    LaunchedEffect(nav.dataVersion) {
+        if (data != null) runCatching { loadDetail(api, itemId) }.getOrNull()?.let { data = it }
+    }
+
     LaunchedEffect(itemId) {
         launch { nav.refreshLayout() } // so layout changes made on the server show up here too
         try {
@@ -444,6 +448,7 @@ private fun EpisodeThumb(nav: Nav, ep: BaseItem, modifier: Modifier, focusScale:
     val layout = LocalLayout.current
     SleekClickable(
         onClick = { nav.play(ep) },
+        onLongClick = { nav.hold(ep) },
         modifier = modifier.aspectRatio(16f / 9f),
         focusScale = focusScale ?: layout.focusScale.toFloat(),
     ) {
@@ -453,8 +458,9 @@ private fun EpisodeThumb(nav: Nav, ep: BaseItem, modifier: Modifier, focusScale:
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize(),
         )
-        ep.progress?.let { ProgressBar(it, Modifier.align(Alignment.BottomStart)) }
-        if (layout.showWatchedBadges && ep.isWatched) {
+        val watched = nav.isWatched(ep)
+        if (watched == ep.isWatched) ep.progress?.let { ProgressBar(it, Modifier.align(Alignment.BottomStart)) }
+        if (layout.showWatchedBadges && watched) {
             WatchedBadge(Modifier.align(Alignment.TopEnd).padding(8.dp))
         }
     }
@@ -504,7 +510,7 @@ private fun EpisodeListRow(nav: Nav, ep: BaseItem) {
                 weight = FontWeight.SemiBold,
                 maxLines = 1,
             )
-            val sub = listOfNotNull(ep.runtimeText, if (ep.isWatched) "Watched" else null).joinToString("  ·  ")
+            val sub = listOfNotNull(ep.runtimeText, if (nav.isWatched(ep)) "Watched" else null).joinToString("  ·  ")
             if (sub.isNotBlank()) {
                 Spacer(Modifier.height(4.dp))
                 SText(sub, size = scaledSp(13), color = c.faint, maxLines = 1)
@@ -540,6 +546,7 @@ private fun WatchedToggle(nav: Nav, item: BaseItem, onChanged: () -> Unit) {
             scope.launch {
                 try {
                     nav.app.api.setWatched(item.id, target)
+                    nav.watchedOverrides[item.id] = target
                     onChanged()
                 } catch (e: Exception) {
                     watched = !target

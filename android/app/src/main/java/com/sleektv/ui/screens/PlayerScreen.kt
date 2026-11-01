@@ -78,7 +78,7 @@ private data class PlaybackPlan(
 )
 
 @Composable
-fun PlayerScreen(nav: Nav, itemId: String) {
+fun PlayerScreen(nav: Nav, itemId: String, fromStart: Boolean = false) {
     val api = nav.app.api
     var plan by remember { mutableStateOf<PlaybackPlan?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
@@ -119,7 +119,7 @@ fun PlayerScreen(nav: Nav, itemId: String) {
     when {
         error != null -> CenterMessage(error.orEmpty()) { SleekButton("Back", onClick = { nav.back() }, primary = true) }
         current == null -> CenterMessage("Loading…")
-        else -> VideoPlayer(nav, current)
+        else -> VideoPlayer(nav, current, fromStart)
     }
 }
 
@@ -132,7 +132,7 @@ fun PlayerScreen(nav: Nav, itemId: String) {
  */
 @androidx.annotation.OptIn(UnstableApi::class)
 @Composable
-private fun VideoPlayer(nav: Nav, plan: PlaybackPlan) {
+private fun VideoPlayer(nav: Nav, plan: PlaybackPlan, fromStart: Boolean = false) {
     val context = LocalContext.current
     val api = nav.app.api
     val layout = LocalLayout.current
@@ -212,7 +212,7 @@ private fun VideoPlayer(nav: Nav, plan: PlaybackPlan) {
     var playerView by remember { mutableStateOf<SleekPlayerView?>(null) }
 
     DisposableEffect(player) {
-        val startMs = (item.userData?.playbackPositionTicks ?: 0L) / 10_000L
+        val startMs = if (fromStart) 0L else (item.userData?.playbackPositionTicks ?: 0L) / 10_000L
         val direct = MediaItem.Builder()
             .setUri(api.directStreamUrl(item.id, mediaSourceId))
             .setSubtitleConfigurations(subtitleConfigs(transcoding = false))

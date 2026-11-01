@@ -51,6 +51,7 @@ import com.sleektv.data.Person
 import com.sleektv.data.cardSubtitle
 import com.sleektv.data.cardTitle
 import com.sleektv.data.isWatched
+import com.sleektv.data.isBrowsableFolder
 import com.sleektv.data.progress
 import com.sleektv.ui.theme.Inter
 import com.sleektv.ui.theme.LocalLayout
@@ -97,11 +98,13 @@ fun SleekClickable(
     contentColor: Color = LocalSleekColors.current.text,
     focusedContentColor: Color = contentColor,
     onFocused: (() -> Unit)? = null,
+    onLongClick: (() -> Unit)? = null,
     content: @Composable BoxScope.() -> Unit,
 ) {
     val colors = LocalSleekColors.current
     Surface(
         onClick = onClick,
+        onLongClick = onLongClick,
         modifier = modifier.onFocusChanged { if (it.isFocused) onFocused?.invoke() },
         shape = ClickableSurfaceDefaults.shape(shape = shape),
         scale = ClickableSurfaceDefaults.scale(focusedScale = focusScale),
@@ -238,9 +241,11 @@ fun MediaCard(
     val layout = LocalLayout.current
     val c = LocalSleekColors.current
     Column(modifier) {
+        val hold = LocalItemHold.current
         SleekClickable(
             onClick = onClick,
             onFocused = onFocused,
+            onLongClick = hold?.takeIf { !item.isBrowsableFolder }?.let { h -> { h(item) } },
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(if (landscape) 16f / 9f else 2f / 3f)
@@ -263,8 +268,9 @@ fun MediaCard(
                     maxLines = 3,
                 )
             }
-            item.progress?.let { ProgressBar(it, Modifier.align(Alignment.BottomStart)) }
-            if (layout.showWatchedBadges && item.isWatched) {
+            val watched = effectiveWatched(item)
+            if (watched == item.isWatched) item.progress?.let { ProgressBar(it, Modifier.align(Alignment.BottomStart)) }
+            if (layout.showWatchedBadges && watched) {
                 WatchedBadge(Modifier.align(Alignment.TopEnd).padding(8.dp))
             }
         }
@@ -380,3 +386,13 @@ fun PagerDots(count: Int, selected: Int, modifier: Modifier = Modifier) {
         }
     }
 }
+
+
+/** What holding OK on a card does (quick menu or toggle watched). Provided once at the app root. */
+val LocalItemHold = androidx.compose.runtime.staticCompositionLocalOf<((BaseItem) -> Unit)?> { null }
+
+/** Watched changes made in this session, so checkmarks update everywhere without reloading. */
+val LocalWatchedOverrides = androidx.compose.runtime.staticCompositionLocalOf<Map<String, Boolean>> { emptyMap() }
+
+@Composable
+fun effectiveWatched(item: BaseItem): Boolean = LocalWatchedOverrides.current[item.id] ?: item.isWatched
