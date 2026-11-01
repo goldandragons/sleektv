@@ -742,8 +742,21 @@ subtitles { mode: jellyfin|default|always|forced|off; language: eng; size: 120%;
                         el.style.maxWidth = 'none';
                     }
                 }
+                sizeToWindow();
+            }
+            // Whatever kind of limit is left (fixed width, shrink-to-fit…), size the form to the
+            // free space between its left edge and the right side of the window.
+            function sizeToWindow() {
+                form.style.width = '';
+                var left = form.getBoundingClientRect().left;
+                var free = Math.floor(document.documentElement.clientWidth - left - 32);
+                if (free > form.getBoundingClientRect().width + 40) {
+                    form.style.width = free + 'px';
+                    form.style.maxWidth = 'none';
+                }
                 fitPreview();
             }
+            window.addEventListener('resize', function () { if (page.offsetParent !== null) sizeToWindow(); });
             function restoreWidth() {
                 widened.forEach(function (pair) { pair[0].style.maxWidth = pair[1]; });
                 widened = [];
@@ -751,11 +764,14 @@ subtitles { mode: jellyfin|default|always|forced|off; language: eng; size: 120%;
             ['pagehide', 'pagebeforehide', 'viewhide', 'viewbeforehide'].forEach(function (name) {
                 page.addEventListener(name, restoreWidth);
             });
+            page.addEventListener('viewshow', function () { setTimeout(useFullWidth, 50); });
 
             // ---------- Load ----------
             page.addEventListener('pageshow', function () {
                 buildChoices();
                 useFullWidth();
+                // Measure again once Jellyfin's page-in animation has finished.
+                [150, 500, 1200].forEach(function (ms) { setTimeout(sizeToWindow, ms); });
                 Dashboard.showLoadingMsg();
                 ApiClient.getPluginConfiguration(pluginId).then(function (config) {
                     fields().forEach(function (el) {
