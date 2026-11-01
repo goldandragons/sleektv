@@ -45,6 +45,18 @@
                 #SleekTVConfigPage input[type=range]::-moz-range-progress { height: 6px; border-radius: 3px; background: var(--sk-accent, #e50914); }
                 #SleekTVConfigPage input[type=range]::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: #fff; border: none; box-shadow: 0 1px 4px rgba(0,0,0,.5); }
 
+                /* Color picker that works without the system color dialog. */
+                #SleekTVConfigPage .sk-color input[type=color] { display: none; }
+                #SleekTVConfigPage .sk-color { flex-wrap: wrap; }
+                #SleekTVConfigPage .sk-swatch { width: 2.2em; height: 2.2em; border-radius: 8px; border: 2px solid rgba(255,255,255,.35); cursor: pointer; padding: 0; flex: none; }
+                #SleekTVConfigPage .sk-hexin { width: 6.5em; font-family: monospace; font-size: .95em; padding: .35em .5em; border-radius: 6px; border: 1px solid rgba(255,255,255,.2); background: rgba(255,255,255,.06); color: inherit; text-transform: uppercase; }
+                #SleekTVConfigPage .sk-hexin.bad { border-color: #ff5252; }
+                #SleekTVConfigPage .sk-palette { display: none; flex-basis: 100%; grid-template-columns: repeat(9, 1.9em); gap: .35em; padding: .6em; margin-top: .3em; border-radius: 8px; background: rgba(255,255,255,.06); }
+                #SleekTVConfigPage .sk-palette.open { display: grid; }
+                #SleekTVConfigPage .sk-palette button { width: 1.9em; height: 1.9em; border-radius: 6px; border: 1px solid rgba(255,255,255,.25); cursor: pointer; padding: 0; }
+                #SleekTVConfigPage .sk-palette button.on { outline: 2px solid #fff; outline-offset: 1px; }
+                #SleekTVConfigPage .sk-color .sk-hex { display: none; }
+
                 /* Option buttons in place of dropdowns (native dropdowns don't open in some desktop apps). */
                 #SleekTVConfigPage .sk-choice { margin: .3em 0 1.1em; }
                 #SleekTVConfigPage .sk-choice-label { font-size: .95em; margin-bottom: .45em; opacity: .9; }
@@ -672,6 +684,59 @@ subtitles { mode: jellyfin|default|always|forced|off; language: eng; size: 120%;
                     select._skChips = chips;
                 });
             }
+            var PALETTE = ['#E50914', '#FF3B30', '#FF6B00', '#FF9500', '#FFCC00', '#A4DE02', '#1DB954', '#00C389', '#00B8D9',
+                '#0A84FF', '#3D5AFE', '#5E5CE6', '#AF52DE', '#FF2D95', '#FF6F91', '#C69C6D', '#8E8E93', '#FFFFFF',
+                '#E5E5EA', '#B0B0B8', '#6E6E78', '#3A3A3C', '#2C2C2E', '#1C1C1E', '#141414', '#0B0B0B', '#000000'];
+            function setColor(input, hex) {
+                input.value = hex.toLowerCase();
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            function buildColorPickers() {
+                all('.sk-color input[type=color]').forEach(function (input) {
+                    if (input._sk) return;
+                    var box = input.parentNode;
+                    var swatch = document.createElement('button');
+                    swatch.type = 'button'; swatch.className = 'sk-swatch'; swatch.title = 'Choose a color';
+                    var hexIn = document.createElement('input');
+                    hexIn.type = 'text'; hexIn.className = 'sk-hexin'; hexIn.maxLength = 7; hexIn.spellcheck = false;
+                    var pal = document.createElement('div');
+                    pal.className = 'sk-palette';
+                    PALETTE.forEach(function (c) {
+                        var b = document.createElement('button');
+                        b.type = 'button'; b.style.background = c; b.title = c; b.dataset.c = c;
+                        b.addEventListener('click', function () { setColor(input, c); pal.classList.remove('open'); });
+                        pal.appendChild(b);
+                    });
+                    swatch.addEventListener('click', function () { if (!input.disabled) pal.classList.toggle('open'); });
+                    hexIn.addEventListener('input', function () {
+                        var v = hexIn.value.trim();
+                        if (v && v[0] !== '#') v = '#' + v;
+                        var ok = /^#[0-9a-f]{6}$/i.test(v) || /^#[0-9a-f]{3}$/i.test(v);
+                        hexIn.classList.toggle('bad', !ok && v.length > 1);
+                        if (ok) setColor(input, hex6(v, input.value));
+                    });
+                    hexIn.addEventListener('blur', function () { hexIn.classList.remove('bad'); syncColorPickers(); });
+                    box.insertBefore(swatch, input);
+                    box.insertBefore(hexIn, input.nextSibling);
+                    box.appendChild(pal);
+                    input._sk = { swatch: swatch, hexIn: hexIn, pal: pal };
+                });
+            }
+            function syncColorPickers() {
+                all('.sk-color input[type=color]').forEach(function (input) {
+                    var ui = input._sk; if (!ui) return;
+                    var v = input.value.toUpperCase();
+                    ui.swatch.style.background = v;
+                    ui.swatch.style.opacity = input.disabled ? .45 : 1;
+                    ui.swatch.style.cursor = input.disabled ? 'default' : 'pointer';
+                    ui.hexIn.disabled = input.disabled;
+                    if (document.activeElement !== ui.hexIn) ui.hexIn.value = v;
+                    Array.prototype.forEach.call(ui.pal.children, function (b) { b.classList.toggle('on', b.dataset.c === v); });
+                    if (input.disabled) ui.pal.classList.remove('open');
+                });
+            }
+
             function refreshChoices() {
                 all('select[data-cfg]').forEach(function (select) {
                     if (!select._skChips) return;
@@ -684,6 +749,7 @@ subtitles { mode: jellyfin|default|always|forced|off; language: eng; size: 120%;
             function render() {
                 refreshChoices();
                 syncBrand2();
+                syncColorPickers();
                 updateSliderLabels();
                 var v = values();
                 page.style.setProperty('--sk-accent', v.accent);
@@ -776,6 +842,7 @@ subtitles { mode: jellyfin|default|always|forced|off; language: eng; size: 120%;
             // ---------- Load ----------
             page.addEventListener('pageshow', function () {
                 buildChoices();
+                buildColorPickers();
                 useFullWidth();
                 // Measure again once Jellyfin's page-in animation has finished.
                 [150, 500, 1200].forEach(function (ms) { setTimeout(sizeToWindow, ms); });
