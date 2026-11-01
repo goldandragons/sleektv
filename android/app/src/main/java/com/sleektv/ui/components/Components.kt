@@ -24,6 +24,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -297,13 +298,24 @@ fun MediaRow(
     modifier: Modifier = Modifier,
     subtitleFor: ((BaseItem) -> String?)? = null,
     firstItemFocus: FocusRequester? = null,
+    onNearEnd: (() -> Unit)? = null, // endless rows: called when the last few cards come into view
 ) {
     if (items.isEmpty()) return
     val layout = LocalLayout.current
     val cardWidth: Dp = if (landscape) (layout.posterWidth * 1.85f).dp else layout.posterWidth.dp
+    val rowState = androidx.compose.foundation.lazy.rememberLazyListState()
+    if (onNearEnd != null) {
+        val nearEnd by androidx.compose.runtime.remember(items.size) {
+            androidx.compose.runtime.derivedStateOf {
+                (rowState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0) >= items.size - 8
+            }
+        }
+        androidx.compose.runtime.LaunchedEffect(nearEnd, items.size) { if (nearEnd) onNearEnd() }
+    }
     Column(modifier) {
         SectionTitle(title)
         LazyRow(
+            state = rowState,
             contentPadding = PaddingValues(horizontal = EDGE.dp, vertical = 10.dp),
             horizontalArrangement = Arrangement.spacedBy(layout.cardSpacing.dp),
         ) {

@@ -194,7 +194,8 @@
                             </div>
                             <div class="sk-slider"><label>Banner height <output></output></label><input type="range" data-cfg="HeroHeight" min="200" max="700" step="10" data-unit=""></div>
                             <div class="sk-slider"><label>Change banner every <output></output></label><input type="range" data-cfg="HeroAutoRotateSeconds" min="0" max="30" step="1" data-unit=" s" data-zero="never"></div>
-                            <div class="sk-slider"><label>Items per "Latest" row <output></output></label><input type="range" data-cfg="LatestItemsPerLibrary" min="5" max="60" step="1" data-unit=""></div>
+                            <div class="sk-slider"><label>"Latest" rows load this many at a time <output></output></label><input type="range" data-cfg="LatestItemsPerLibrary" min="12" max="60" step="4" data-unit=""></div>
+                            <p class="sk-help">Latest rows keep loading as you scroll right, back to the oldest item.</p>
                             <div class="inputContainer">
                                 <input is="emby-input" type="text" data-cfg="HomeRows" label="Rows, in order" />
                                 <div class="fieldDescription">Comma separated: ContinueWatching, NextUp, Latest, Discover (Seerr), Libraries. Leave one out to hide it.</div>

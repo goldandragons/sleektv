@@ -223,6 +223,26 @@ class JellyfinApi(private val session: Session) {
         ),
     ).items.map { it.sortName ?: it.name.orEmpty() }
 
+    /**
+     * A page of a library's newest items, for endless "Latest" rows. Shows are ordered by when they
+     * last got new episodes (like Jellyfin's own Latest), movies and everything else by date added.
+     */
+    suspend fun latestPage(view: BaseItem, startIndex: Int, limit: Int): List<BaseItem> {
+        val (types, sort) = when (view.collectionType) {
+            "movies" -> "Movie" to "DateCreated,SortName"
+            "tvshows" -> "Series" to "DateLastContentAdded,DateCreated,SortName"
+            else -> "Movie,Series" to "DateCreated,SortName"
+        }
+        return get(
+            ItemsResult.serializer(), "Items",
+            mapOf(
+                "userId" to userId, "parentId" to view.id, "includeItemTypes" to types, "recursive" to true,
+                "sortBy" to sort, "sortOrder" to "Descending", "startIndex" to startIndex, "limit" to limit,
+                "fields" to fields, "enableTotalRecordCount" to false,
+            ),
+        ).items
+    }
+
     /** Actors, directors, writers… matching a search. */
     suspend fun searchPeople(term: String, limit: Int = 24): List<BaseItem> = get(
         ItemsResult.serializer(), "Persons",

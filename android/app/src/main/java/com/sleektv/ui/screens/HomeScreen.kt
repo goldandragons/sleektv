@@ -20,6 +20,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -118,7 +119,7 @@ private suspend fun loadHome(api: JellyfinApi, layout: LayoutConfig): HomeData =
     val latest = views
         .filter { it.collectionType in mediaLibraries }
         .map { view ->
-            async { view to runCatching { api.latest(view.id, layout.latestItemsPerLibrary) }.getOrDefault(emptyList()) }
+            async { view to runCatching { api.latestPage(view, 0, layout.latestItemsPerLibrary.coerceAtLeast(12)) }.getOrDefault(emptyList()) }
         }
     HomeData(views, resume.await(), nextUp.await(), latest.awaitAll())
 }
@@ -193,6 +194,27 @@ fun HomeScreen(nav: Nav) {
 private fun HomeContent(nav: Nav, home: HomeData, discover: DiscoverData?, firstFocus: FocusRequester, onReload: () -> Unit) {
     val api = nav.app.api
     val layout = LocalLayout.current
+    // Endless Latest rows: what's loaded so far per library, and which libraries have run out.
+    val latestRows = remember(home) { mutableStateMapOf<String, List<BaseItem>>().apply { home.latest.forEach { (v, items) -> put(v.id, items) } } }
+    val latestDone = remember(home) { mutableStateMapOf<String, Boolean>() }
+    val latestLoading = remember(home) { mutableStateMapOf<String, Boolean>() }
+    val latestScope = rememberCoroutineScope()
+    fun loadMoreLatest(view: BaseItem) {
+        if (latestDone[view.id] == true || latestLoading[view.id] == true) return
+        latestLoading[view.id] = true
+        latestScope.launch {
+            val have = latestRows[view.id].orEmpty()
+            val pageSize = layout.latestItemsPerLibrary.coerceAtLeast(12)
+            val page = runCatching { api.latestPage(view, have.size, pageSize) }.getOrNull()
+            if (page != null) {
+                val known = have.mapTo(HashSet()) { it.id }
+                latestRows[view.id] = have + page.filter { it.id !in known }
+                if (page.size < pageSize) latestDone[view.id] = true
+            }
+            latestLoading[view.id] = false
+        }
+    }
+
     // Items removed from the banner with "Remove" (ids of items, and of shows when the whole show was marked).
     var removed by remember { mutableStateOf(emptySet<String>()) }
     val heroItems = remember(home, layout.heroSource, removed) {
@@ -305,7 +327,8 @@ private fun HomeContent(nav: Nav, home: HomeData, discover: DiscoverData?, first
                         }
                     }
 
-                    "latest" -> home.latest.forEach { (view, items) ->
+                    "latest" -> home.latest.forEach { (view, firstPage) ->
+                        val items = latestRows[view.id] ?: firstPage
                         if (items.isNotEmpty()) {
                             val f = nextFocus()
                             item(key = "latest-${view.id}") {
@@ -316,6 +339,7 @@ private fun HomeContent(nav: Nav, home: HomeData, discover: DiscoverData?, first
                                     imageFor = { if (layout.postersLandscape) api.landscape(it) else api.poster(it) },
                                     onClick = { nav.open(it) },
                                     firstItemFocus = f,
+                                    onNearEnd = { loadMoreLatest(view) },
                                     modifier = Modifier.padding(top = layout.rowSpacing.dp),
                                 )
                             }
