@@ -62,6 +62,7 @@ import com.sleektv.data.cardTitle
 import com.sleektv.data.isWatched
 import com.sleektv.ui.components.LocalItemHold
 import com.sleektv.ui.components.LocalWatchedOverrides
+import com.sleektv.ui.components.LocalCardFlash
 import com.sleektv.ui.components.SText
 import com.sleektv.ui.components.SleekClickable
 import com.sleektv.ui.theme.Inter
@@ -156,6 +157,9 @@ class Nav(
     var menuFor by mutableStateOf<BaseItem?>(null)
     var toast by mutableStateOf<String?>(null)
 
+    /** The card that just changed and what to say on it, e.g. "Marked as watched". */
+    var cardFlash by mutableStateOf<Pair<String, String>?>(null)
+
     fun isWatched(item: BaseItem): Boolean = watchedOverrides[item.id] ?: item.isWatched
 
     /** What holding OK on a card does: quick menu, or toggle watched straight away (plugin setting). */
@@ -166,7 +170,7 @@ class Nav(
 
     fun setWatched(item: BaseItem, watched: Boolean) {
         watchedOverrides[item.id] = watched
-        toast = if (watched) "Marked as watched" else "Marked as unwatched"
+        cardFlash = item.id to (if (watched) "Marked as watched" else "Marked as unwatched")
         app.appScope.launch(Dispatchers.Main) {
             try {
                 app.api.setWatched(item.id, watched)
@@ -299,6 +303,7 @@ fun SleekTvApp(app: SleekApp) {
       CompositionLocalProvider(
         LocalItemHold provides nav::hold,
         LocalWatchedOverrides provides nav.watchedOverrides,
+        LocalCardFlash provides nav.cardFlash,
       ) {
         Box(
             Modifier
@@ -321,6 +326,13 @@ fun SleekTvApp(app: SleekApp) {
             }
             nav.menuFor?.let { ItemQuickMenu(nav, it) }
             ToastPill(nav)
+            // Clear the on-card message after a moment.
+            LaunchedEffect(nav.cardFlash) {
+                if (nav.cardFlash != null) {
+                    kotlinx.coroutines.delay(1_600)
+                    nav.cardFlash = null
+                }
+            }
         }
       }
     }

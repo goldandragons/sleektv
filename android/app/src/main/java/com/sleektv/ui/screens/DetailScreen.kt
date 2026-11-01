@@ -65,6 +65,7 @@ import com.sleektv.ui.components.SectionTitle
 import com.sleektv.ui.components.SleekButton
 import com.sleektv.ui.components.SleekClickable
 import com.sleektv.ui.components.WatchedBadge
+import com.sleektv.ui.components.CardFlash
 import com.sleektv.ui.theme.LocalLayout
 import com.sleektv.ui.theme.LocalSleekColors
 import com.sleektv.ui.theme.scaledSp
@@ -463,6 +464,7 @@ private fun EpisodeThumb(nav: Nav, ep: BaseItem, modifier: Modifier, focusScale:
         if (layout.showWatchedBadges && watched) {
             WatchedBadge(Modifier.align(Alignment.TopEnd).padding(8.dp))
         }
+        CardFlash(ep.id)
     }
 }
 

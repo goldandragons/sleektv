@@ -273,6 +273,7 @@ fun MediaCard(
             if (layout.showWatchedBadges && watched) {
                 WatchedBadge(Modifier.align(Alignment.TopEnd).padding(8.dp))
             }
+            CardFlash(item.id)
         }
         if (layout.showTitlesUnderCards) {
             Spacer(Modifier.height(10.dp))
@@ -396,3 +397,39 @@ val LocalWatchedOverrides = androidx.compose.runtime.staticCompositionLocalOf<Ma
 
 @Composable
 fun effectiveWatched(item: BaseItem): Boolean = LocalWatchedOverrides.current[item.id] ?: item.isWatched
+
+
+/** The card that just changed and the message to show on it. */
+val LocalCardFlash = androidx.compose.runtime.staticCompositionLocalOf<Pair<String, String>?> { null }
+
+/** Darkens a card briefly and shows e.g. "✓ Marked as watched" on it. Use inside the card's Box. */
+@Composable
+fun BoxScope.CardFlash(itemId: String) {
+    val flash = LocalCardFlash.current
+    androidx.compose.animation.AnimatedVisibility(
+        visible = flash?.first == itemId,
+        enter = androidx.compose.animation.fadeIn(),
+        exit = androidx.compose.animation.fadeOut(),
+        modifier = Modifier.matchParentSize(),
+    ) {
+        Box(
+            Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.72f))
+                .padding(8.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                SText("✓", size = 26.sp, weight = FontWeight.Bold, color = LocalSleekColors.current.accent)
+                SText(
+                    flash?.second.orEmpty(),
+                    size = scaledSp(13),
+                    weight = FontWeight.SemiBold,
+                    color = Color.White,
+                    align = TextAlign.Center,
+                    maxLines = 2,
+                )
+            }
+        }
+    }
+}
