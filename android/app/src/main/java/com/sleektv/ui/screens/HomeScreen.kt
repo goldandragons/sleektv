@@ -25,6 +25,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
@@ -254,6 +256,7 @@ private fun HomeContent(nav: Nav, home: HomeData, discover: DiscoverData?, first
                         playFocus = heroFocus,
                         onPlay = { nav.play(it) },
                         onInfo = { nav.open(it) },
+                        onScreen = listState.firstVisibleItemIndex == 0,
                         onRemove = { item ->
                             // Episodes: the whole show or just the episode, as set in the plugin. Movies: the movie.
                             val wholeShow = item.isEpisode && item.seriesId != null &&
@@ -415,6 +418,7 @@ private fun Hero(
     onFocusChange: (Boolean) -> Unit,
     onUp: () -> Boolean,
     onRemove: (BaseItem) -> Unit,
+    onScreen: Boolean = true,
 ) {
     val layout = LocalLayout.current
     var playFocused by remember { mutableStateOf(false) }
@@ -425,9 +429,10 @@ private fun Hero(
     var hasFocus by remember { mutableStateOf(false) }
 
     // Rotate slides, but hold still while the buttons are focused so Play stays on what you see.
-    LaunchedEffect(items, hasFocus, layout.heroAutoRotateSeconds) {
+    // Also hold still while it's scrolled off screen.
+    LaunchedEffect(items, hasFocus, onScreen, layout.heroAutoRotateSeconds) {
         val seconds = layout.heroAutoRotateSeconds
-        if (seconds <= 0 || hasFocus || items.size < 2) return@LaunchedEffect
+        if (seconds <= 0 || hasFocus || !onScreen || items.size < 2) return@LaunchedEffect
         while (true) {
             delay(seconds * 1000L)
             index = (index + 1) % items.size
@@ -465,24 +470,28 @@ private fun Hero(
                 .padding(start = EDGE.dp, bottom = 18.dp)
                 .fillMaxWidth(0.48f),
         ) {
-            val logo = api.logo(item)
-            if (logo != null) {
-                AsyncImage(
-                    model = logo,
-                    contentDescription = item.name,
-                    contentScale = ContentScale.Fit,
-                    alignment = Alignment.CenterStart,
-                    modifier = Modifier
-                        .heightIn(max = (layout.heroTitleSize * 2.6f).dp)
-                        .widthIn(max = 460.dp),
-                )
-            } else {
-                SText(
-                    item.cardTitle,
-                    size = scaledSp(layout.heroTitleSize),
-                    weight = FontWeight.ExtraBold,
-                    maxLines = 2,
-                )
+            // Every slide uses the same fixed slots (title, info line, progress, 3 description lines),
+            // so the banner keeps exactly the same height as it rotates and nothing below it moves.
+            val density = LocalDensity.current
+            val titleSlot = maxOf(layout.heroTitleSize * 2.6f, layout.heroTitleSize * layout.fontScale.toFloat() * 2.5f).dp
+            Box(Modifier.height(titleSlot).fillMaxWidth(), contentAlignment = Alignment.BottomStart) {
+                val logo = api.logo(item)
+                if (logo != null) {
+                    AsyncImage(
+                        model = logo,
+                        contentDescription = item.name,
+                        contentScale = ContentScale.Fit,
+                        alignment = Alignment.BottomStart,
+                        modifier = Modifier.fillMaxSize().widthIn(max = 460.dp),
+                    )
+                } else {
+                    SText(
+                        item.cardTitle,
+                        size = scaledSp(layout.heroTitleSize),
+                        weight = FontWeight.ExtraBold,
+                        maxLines = 2,
+                    )
+                }
             }
             Spacer(Modifier.height(14.dp))
             // Episodes: "S2:E5 · Episode name"; everything else: year · rating · runtime.
@@ -491,18 +500,23 @@ private fun Hero(
             } else {
                 item.metaLine()
             }
-            if (meta.isNotBlank()) {
-                SText(meta, size = scaledSp(14), weight = FontWeight.Medium, color = c.muted, maxLines = 1)
-                Spacer(Modifier.height(8.dp))
+            SText(meta.ifBlank { " " }, size = scaledSp(14), weight = FontWeight.Medium, color = c.muted, maxLines = 1)
+            Spacer(Modifier.height(8.dp))
+            val progress = item.progress
+            ProgressBar(
+                progress ?: 0f,
+                Modifier
+                    .widthIn(max = 320.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .graphicsLayer { alpha = if (progress != null) 1f else 0f },
+            )
+            Spacer(Modifier.height(10.dp))
+            val overviewSize = scaledSp(14)
+            val overviewSlot = with(density) { (overviewSize * 1.45f * 3).toDp() }
+            Box(Modifier.height(overviewSlot), contentAlignment = Alignment.TopStart) {
+                SText(item.overview.orEmpty(), size = overviewSize, color = c.muted, maxLines = 3, lineHeight = overviewSize * 1.4f)
             }
-            item.progress?.let {
-                ProgressBar(it, Modifier.widthIn(max = 320.dp).clip(RoundedCornerShape(2.dp)))
-                Spacer(Modifier.height(10.dp))
-            }
-            item.overview?.takeIf { it.isNotBlank() }?.let {
-                SText(it, size = scaledSp(14), color = c.muted, maxLines = 3)
-                Spacer(Modifier.height(18.dp))
-            }
+            Spacer(Modifier.height(18.dp))
             val resumable = (item.userData?.playbackPositionTicks ?: 0L) > 0L
             // Left from Play / Right from Remove flips slides; Up hands focus to the header.
             Row(
